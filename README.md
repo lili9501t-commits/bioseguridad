@@ -52,3 +52,4 @@ ng serve
 ```
 
 Una vez completada la compilación local, abre tu navegador web e ingresa a: **`http://localhost:4200/`**
+# bioseguridad
