@@ -1,59 +1,54 @@
-# BioseguridadFrontend
+# 🦷 Plataforma Web de Control de Bioseguridad (Frontend)
+### Facultad de Odontología - USFX | Proyecto Académico
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.1.
+Este repositorio contiene el código fuente de la plataforma web y la interfaz de usuario de escritorio desarrollada en **Angular 21** para el sistema de verificación visual de Elementos de Protección Personal (EPP). La aplicación interactúa de forma síncrona con el microservicio de Inteligencia Artificial (FastAPI + YOLO) y la persistencia de datos administrada en PostgreSQL.
 
-## Development server
+---
 
-To start a local development server, run:
+## 🎨 Identidad Visual y UI (Temática de Salud)
+La interfaz de usuario implementa las directrices de diseño específicas para entornos clínicos y odontológicos:
+* **Paleta de Colores:** Uso prioritario de Verde Clínico (`#0D9488`) para la identidad institucional, Verde Menta claro para estados de cumplimiento normativo, Rojo Clínico suave para alertas de incumplimiento y Gris Pizarra para tipografías legibles.
+* **Diseño Desktop Widescreen:** Optimizado estructuralmente para monitores de computadoras en estaciones de control fijas, distribuyendo el flujo de la cámara y los tableros en columnas paralelas lado a lado para evitar el apilamiento vertical (Mobile-First desactivado).
+
+---
+
+## 🏗️ Módulos de la Plataforma Web
+La aplicación se compone de tres vistas de usuario principales administradas de manera modular por el enrutador de Angular:
+1. **Panel de Control de la Cámara:** Gestiona la inicialización de la webcam e invoca el análisis de la IA cuadro por cuadro, mostrando en tiempo real si el alumno `CUMPLE` o `INCUMPLE`.
+2. **Historial de Inspecciones:** Tabla de consultas avanzadas conectada a PostgreSQL para buscar registros históricos mediante el Código Estudiantil.
+3. **Gestión de Estudiantes:** Módulo administrativo para dar de alta al padrón de alumnos de Odontología habilitados para las evaluaciones.
+
+---
+
+## 🛠️ Especificaciones Técnicas
+* **Framework:** Angular 21 (Single Page Application).
+* **Renderizado:** Client-Side Rendering (CSR) forzado (`--no-ssr`) para asegurar latencia cero en el procesamiento de video local y evitar errores de hidratación con la cámara web.
+* **Estilos:** Bootstrap + Bootstrap Icons.
+* **Asistencia con IA:** Configuración nativa optimizada para **Claude AI** mediante directrices estrictas de Angular (Standalone Components y control de flujo moderno).
+
+---
+
+## 🚀 Plan de Trabajo Actual: Simulación y Aprobación Visual
+Con el fin de mitigar retrabajos y asegurar la validación metodológica por parte de los docentes revisores de la USFX antes de acoplar la base de datos definitiva, el frontend implementa la siguiente estrategia:
+1. **Diseño de Interfases en Stitch:** Creación de mockups de alta fidelidad con la paleta de colores aprobada.
+2. **Datos Simulados (Mock Data):** Uso temporal de objetos JSON estáticos dentro de Angular para simular el comportamiento de alumnos aprobados y reprobados de forma autónoma.
+3. **Conexión Final:** Reemplazo de los flujos de datos simulados por peticiones HTTP reales al servicio backend una vez consolidado el esquema en PostgreSQL.
+
+---
+
+## 📋 Instrucciones de Ejecución Local
+
+Asegúrate de contar con [Node.js](https://nodejs.org) (Versión 18 o superior) en tu sistema.
 
 ```bash
+# 1. Asegurarse de estar en la carpeta del frontend
+cd bioseguridad-frontend
+
+# 2. Instalar los paquetes y dependencias globales (Bootstrap e Iconos)
+npm install
+
+# 3. Levantar el servidor local de desarrollo de Angular
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Una vez completada la compilación local, abre tu navegador web e ingresa a: **`http://localhost:4200/`**
