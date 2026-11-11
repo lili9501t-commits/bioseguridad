@@ -16,8 +16,8 @@ const MENU_DOCENTE: ItemMenu[] = [
 ];
 
 const MENU_ESTUDIANTE: ItemMenu[] = [
-  { ruta: '/estudiante/inicio', etiqueta: 'Mi Panel', icono: 'bi-house' },
-  { ruta: '/estudiante/historial', etiqueta: 'Mis Inspecciones', icono: 'bi-clock-history' },
+  { ruta: '/estudiante/escaneo', etiqueta: 'Nuevo Escaneo', icono: 'bi-camera-video' },
+  { ruta: '/estudiante/historial', etiqueta: 'Mi Historial', icono: 'bi-clock-history' },
 ];
 
 @Component({

@@ -1,0 +1,162 @@
+<nav class="migas">
+  <span>PORTAL ESTUDIANTIL</span> <i class="bi bi-chevron-right"></i>
+  <span>CONTROL DE BIOSEGURIDAD</span> <i class="bi bi-chevron-right"></i>
+  <strong>NUEVO ESCANEO EN VIVO</strong>
+</nav>
+
+<header class="encabezado">
+  <div>
+    <h1>Escaneo de Bioseguridad EPP en Vivo</h1>
+  </div>
+  <div class="cab-acciones">
+    <div class="chip-servidor" [class.caido]="servidorCaido()">
+      <span class="dot"></span>
+      @if (servidor(); as s) {
+        Servidor de Detección: <strong>Operativo</strong> ({{ s.modo_detector }})
+      } @else if (servidorCaido()) {
+        Servidor de Detección: <strong>Sin conexión</strong>
+      } @else {
+        Conectando con el servidor...
+      }
+    </div>
+  </div>
+</header>
+
+<div class="contenido">
+  <!-- Columna video -->
+  <section class="col-video">
+    <!-- Grupo y modalidad -->
+    <div class="config">
+      <div class="config-grupo">
+        <label class="lbl" for="grupo">Seleccionar Mi Grupo / Asignatura <span class="req">*</span></label>
+        <select id="grupo" class="select" [value]="grupoId() ?? ''" (change)="seleccionarGrupo($any($event.target).value)" [disabled]="!misGrupos().length">
+          <option value="" disabled>{{ misGrupos().length ? 'Seleccione su grupo...' : 'No tiene grupos habilitados' }}</option>
+          @for (c of misGrupos(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }} - Grupo {{ c.grupo }} ({{ c.sigla }}, {{ c.turno }})</option>
+          }
+        </select>
+      </div>
+      <div class="config-modo">
+        <span class="lbl">Modalidad de Captura <span class="req">*</span></span>
+        <div class="modos">
+          <label class="modo" [class.sel]="modo() === 'upper_body'">
+            <input type="radio" name="modo" [checked]="modo() === 'upper_body'" (change)="cambiarModo('upper_body')" />
+            <div>
+              <strong>Cintura para arriba <span class="chip-sug">Sugerido</span></strong>
+              <small>Gorro, barbijo, gafas, protector, mandil, pijama y guantes.</small>
+            </div>
+          </label>
+          <label class="modo" [class.sel]="modo() === 'full_body'">
+            <input type="radio" name="modo" [checked]="modo() === 'full_body'" (change)="cambiarModo('full_body')" />
+            <div>
+              <strong>Cuerpo completo</strong>
+              <small>Incluye zapatos clínicos y cubre zapatos (9 elementos).</small>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles de cámara + captura -->
+    <div class="controles">
+      <button type="button" class="btn-activar" [disabled]="procesandoCamara() || capturando()" (click)="activarCamara()">
+        <i class="bi bi-camera-video"></i> {{ camaraActiva() ? 'Reiniciar Cámara' : 'Activar Cámara' }}
+      </button>
+      <button type="button" class="btn-apagar" [disabled]="!camaraActiva() || procesandoCamara() || capturando()" (click)="apagarCamara()">
+        <i class="bi bi-camera-video-off"></i> Apagar Cámara
+      </button>
+      <button type="button" class="btn-capturar" [disabled]="capturando() || !camaraActiva() || !grupo() || !estudiante()?.is_active" (click)="capturar()">
+        @if (capturando()) {
+          <span class="spinner-border spinner-border-sm"></span> Analizando...
+        } @else {
+          <i class="bi bi-camera"></i> Capturar y Ver Mis Resultados
+        }
+      </button>
+    </div>
+
+    <!-- Barra: estado en vivo + instrucción -->
+    <div class="barra-vivo">
+      <span class="chip-estado" [class.on]="camaraActiva()">
+        <span class="rec"></span>
+        {{ camaraActiva() ? 'EN VIVO' : 'CÁMARA APAGADA' }}
+        @if (camaraActiva() && infoCamara()) { <small>({{ infoCamara() }})</small> }
+      </span>
+      <p><i class="bi bi-person-bounding-box"></i> Colóquese frente a la cámara respetando la guía de encuadre para la verificación automática por visión artificial antes de ingresar al box clínico.</p>
+    </div>
+
+    <div class="video">
+      @if (camaraActiva()) {
+        <img [src]="urlStream()" alt="Video en vivo de la cámara" (error)="streamConError()" />
+      } @else {
+        <div class="video-apagado">
+          <i class="bi bi-camera-video-off"></i>
+          <strong>Cámara apagada</strong>
+          <span>Presione "Activar Cámara" para iniciar el escaneo.</span>
+        </div>
+      }
+      @if (capturando()) {
+        <div class="video-overlay"><span class="spinner-border"></span> Analizando su bioseguridad...</div>
+      }
+    </div>
+
+    <p class="nota-disp"><i class="bi bi-info-circle"></i> La cámara se controla desde el servidor de detección del box clínico. La captura generará un informe fotográfico para validación del docente de cátedra.</p>
+
+    @if (error()) {
+      <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ error() }}</div>
+    }
+  </section>
+
+  <!-- Columna datos de sesión -->
+  <aside class="col-sesion">
+    <div class="sesion-cab">
+      <span class="sesion-icono"><i class="bi bi-clipboard2-pulse"></i></span>
+      <div>
+        <h2>Datos de Sesión y Escaneo</h2>
+        <small>Verifique su información antes de registrar la captura</small>
+      </div>
+    </div>
+
+    @if (estudiante(); as e) {
+      <dl class="datos">
+        <div><dt><i class="bi bi-person"></i> Estudiante:</dt><dd>{{ e.first_name }} {{ e.last_name }} (RU: {{ e.student_code }})</dd></div>
+        <div><dt><i class="bi bi-clock"></i> Fecha y Hora:</dt><dd>{{ ahora() | date: 'dd/MM/yyyy • HH:mm:ss' }} <small>(Auto)</small></dd></div>
+        <div><dt><i class="bi bi-collection"></i> Grupo:</dt><dd>{{ grupo() ? grupo()!.nombre + ' - Grupo ' + grupo()!.grupo : '—' }}</dd></div>
+        <p class="habilitado" [class.no]="!e.is_active">
+          <i class="bi" [class.bi-check-circle-fill]="e.is_active" [class.bi-x-circle-fill]="!e.is_active"></i>
+          {{ e.is_active ? 'Matrícula habilitada para práctica clínica' : 'Matrícula inactiva: consulte a su docente' }}
+        </p>
+      </dl>
+    } @else {
+      <div class="alerta-error">Su cuenta no está registrada en el padrón de estudiantes. Consulte a su docente.</div>
+    }
+
+    <div class="en-vivo">
+      <div class="en-vivo-cab">
+        <span>Detecciones en tiempo real</span>
+        <strong>{{ enVivo().length }} elementos</strong>
+      </div>
+      @if (!camaraActiva()) {
+        <p class="vacio">Active la cámara para ver la pre-verificación.</p>
+      } @else if (mensajeEnVivo()) {
+        <p class="vacio">{{ mensajeEnVivo() }}</p>
+      } @else if (!enVivo().length) {
+        <p class="vacio"><span class="spinner-border spinner-border-sm"></span> Analizando...</p>
+      }
+      <ul>
+        @for (el of enVivo(); track el.element_id) {
+          <li>
+            <span class="nombre"><span class="punto" [class]="el.status"></span>{{ el.name }}</span>
+            <span class="estado" [class]="el.status">
+              @switch (el.status) {
+                @case ('cumple') { <i class="bi bi-check2"></i> Conforme }
+                @case ('incumple') { <i class="bi bi-x"></i> No conforme }
+                @default { <i class="bi bi-eye-slash"></i> No evaluado }
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+
+  </aside>
+</div>

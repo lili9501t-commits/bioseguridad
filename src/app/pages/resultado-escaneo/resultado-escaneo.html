@@ -1,0 +1,81 @@
+@if (registro(); as reg) {
+  @let res = reg.resultado;
+  <nav class="migas">
+    <span>PORTAL ESTUDIANTIL</span> <i class="bi bi-chevron-right"></i>
+    <span>CONTROL DE BIOSEGURIDAD</span> <i class="bi bi-chevron-right"></i>
+    <strong>RESULTADO DEL ESCANEO</strong>
+  </nav>
+
+  <header class="encabezado">
+    <h1>Resultado de su Escaneo de Bioseguridad</h1>
+    <a routerLink="/estudiante/escaneo" class="btn-primario"><i class="bi bi-arrow-repeat"></i> Nuevo Escaneo</a>
+  </header>
+
+  <section class="dictamen" [class]="res.overall_status">
+    <i class="bi"
+       [class.bi-shield-check]="res.overall_status === 'cumple'"
+       [class.bi-shield-exclamation]="res.overall_status === 'incumple'"
+       [class.bi-shield]="res.overall_status === 'no_evaluado'"></i>
+    <div>
+      <strong>
+        @switch (res.overall_status) {
+          @case ('cumple') { CUMPLE }
+          @case ('incumple') { INCUMPLE }
+          @default { NO EVALUADO }
+        }
+      </strong>
+      <p>{{ res.overall_message }}</p>
+    </div>
+  </section>
+
+  <div class="contenido">
+    <section class="col-izq">
+      <div class="tarjeta">
+        @if (res.annotated_image_base64) {
+          <img class="captura" [src]="res.annotated_image_base64" alt="Captura anotada por la IA" />
+        } @else {
+          <div class="sin-imagen"><i class="bi bi-image"></i> Imagen no disponible</div>
+        }
+      </div>
+
+      <div class="tarjeta datos">
+        <div><span>Estudiante</span><strong>{{ reg.estudiante_nombre }} ({{ reg.student_code }})</strong></div>
+        <div><span>Grupo</span><strong>{{ reg.grupo_nombre }}</strong></div>
+        <div><span>Ingreso</span><strong>{{ reg.fecha_ingreso | date: 'dd/MM/yyyy • HH:mm' }}</strong></div>
+        <div><span>Captura</span><strong>{{ res.inspection_timestamp | date: 'dd/MM/yyyy • HH:mm:ss' }}</strong></div>
+        <div><span>Modalidad</span><strong>{{ res.capture_mode === 'upper_body' ? 'Cintura para arriba' : 'Cuerpo completo' }}</strong></div>
+      </div>
+    </section>
+
+    <section class="col-der">
+      <div class="resumen">
+        <div class="cifra"><strong>{{ res.summary.compliant_count }}</strong><span>Cumple</span></div>
+        <div class="cifra rojo"><strong>{{ res.summary.non_compliant_count }}</strong><span>Incumple</span></div>
+        <div class="cifra gris"><strong>{{ res.summary.not_evaluated_count }}</strong><span>No evaluado</span></div>
+      </div>
+
+      <div class="tarjeta">
+        <h2 class="titulo-detalle">Detalle de los {{ res.summary.total_elements }} elementos</h2>
+        <app-lista-elementos [elementos]="res.elements" />
+      </div>
+
+      @if (res.image_quality.warnings.length) {
+        <div class="aviso">
+          <strong><i class="bi bi-exclamation-circle"></i> Observaciones de la captura</strong>
+          <ul>@for (w of res.image_quality.warnings; track $index) { <li>{{ w }}</li> }</ul>
+        </div>
+      }
+      @if (res.non_visual_conditions_disclaimer.length) {
+        <div class="nota">
+          <ul>@for (d of res.non_visual_conditions_disclaimer; track $index) { <li>{{ d }}</li> }</ul>
+        </div>
+      }
+    </section>
+  </div>
+} @else {
+  <div class="no-encontrado">
+    <i class="bi bi-search"></i>
+    <p>No se encontró el resultado del escaneo.</p>
+    <a routerLink="/estudiante/escaneo" class="btn-primario">Ir a Nuevo Escaneo</a>
+  </div>
+}

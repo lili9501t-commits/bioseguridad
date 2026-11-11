@@ -28,6 +28,12 @@ export class Estudiantes {
   readonly activos = computed(() => this._lista().filter((e) => e.is_active).length);
   readonly inactivos = computed(() => this._lista().filter((e) => !e.is_active).length);
 
+  /** Registro del padrón asociado a la cuenta que inició sesión. */
+  buscarPorCorreo(correo: string): Estudiante | undefined {
+    const c = correo.trim().toLowerCase();
+    return this._lista().find((e) => e.email.toLowerCase() === c);
+  }
+
   /** Cantidad de estudiantes asignados a un curso. */
   contarPorCurso(cursoId: number): number {
     return this._lista().filter((e) => e.clinical_group === cursoId).length;

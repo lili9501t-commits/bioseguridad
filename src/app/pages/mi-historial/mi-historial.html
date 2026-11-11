@@ -1,0 +1,164 @@
+<nav class="migas">
+  <span>PORTAL ESTUDIANTIL</span> <i class="bi bi-chevron-right"></i>
+  <strong>MI HISTORIAL</strong>
+</nav>
+
+<header class="encabezado">
+  <h1>Mi Historial de Inspecciones</h1>
+  <p>Historial personal de bioseguridad en prácticas clínicas.</p>
+</header>
+
+<section class="indicadores">
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">TOTAL ESCANEOS</span>
+      <span class="ind-valor">{{ misRegistros().length }}</span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-camera"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">CUMPLIMIENTO</span>
+      <span class="ind-valor verde">
+        @if (cumplimiento() !== null) { {{ cumplimiento() | number: '1.0-1' }}% } @else { — }
+      </span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-check-circle"></i></span>
+  </div>
+</section>
+
+<section class="filtros">
+  <label class="filtro">
+    <i class="bi bi-funnel"></i>
+    <select [value]="filtroEstado()" (change)="filtroEstado.set($any($event.target).value)" aria-label="Filtrar por resultado">
+      <option value="todos">Todos los estados ({{ contar('todos') }})</option>
+      <option value="cumple">Cumple ({{ contar('cumple') }})</option>
+      <option value="incumple">Incumple ({{ contar('incumple') }})</option>
+      <option value="no_evaluado">No evaluado ({{ contar('no_evaluado') }})</option>
+    </select>
+  </label>
+  <label class="filtro">
+    <i class="bi bi-calendar3"></i>
+    <input type="date" [value]="desde()" (change)="desde.set($any($event.target).value)" aria-label="Desde" />
+    <span>–</span>
+    <input type="date" [value]="hasta()" (change)="hasta.set($any($event.target).value)" aria-label="Hasta" />
+  </label>
+  <button type="button" class="btn-restablecer" (click)="restablecer()">
+    <i class="bi bi-arrow-counterclockwise"></i> Restablecer
+  </button>
+</section>
+
+<section class="panel">
+  <div class="panel-cab">
+    <h2>Registros de Inspección</h2>
+    <span>Mostrando {{ paginaActual().length }} de {{ filtrados().length }}</span>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead>
+        <tr>
+          <th>FECHA Y HORA</th>
+          <th>CURSO / CLÍNICA</th>
+          <th>RESULTADO</th>
+          <th class="text-end">DETALLE</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of paginaActual(); track r.id) {
+          <tr>
+            <td>
+              <span class="fecha">{{ r.resultado.inspection_timestamp | date: 'dd/MM/yyyy • HH:mm' }}</span>
+              <small class="hace" [class.reciente]="$first && pagina() === 1">{{ haceCuanto(r.resultado.inspection_timestamp) }}</small>
+            </td>
+            <td>
+              <strong class="curso">{{ r.grupo_nombre }}</strong>
+              <small class="sub">{{ r.resultado.capture_mode === 'upper_body' ? 'Cintura para arriba' : 'Cuerpo completo' }}</small>
+            </td>
+            <td>
+              <span class="resultado" [class]="r.resultado.overall_status">
+                @switch (r.resultado.overall_status) {
+                  @case ('cumple') { <i class="bi bi-check2"></i> Cumple }
+                  @case ('incumple') { <i class="bi bi-x"></i> Incumple }
+                  @default { No evaluado }
+                }
+              </span>
+            </td>
+            <td class="text-end">
+              <button type="button" class="btn-detalle" (click)="seleccionado.set(r)">
+                <i class="bi bi-eye"></i> Ver detalle
+              </button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="vacio">
+              <i class="bi bi-clipboard-x"></i>
+              {{ misRegistros().length ? 'No hay registros con los filtros seleccionados.' : 'Aún no tiene inspecciones registradas.' }}
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="paginacion">
+    <span>{{ rango().desde }} a {{ rango().hasta }} de {{ rango().total }} registros</span>
+    <div class="pag-controles">
+      <button type="button" class="pag-btn" [disabled]="pagina() === 1" (click)="pagina.set(pagina() - 1)" aria-label="Anterior">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      @for (p of paginas(); track p) {
+        <button type="button" class="pag-btn" [class.activo]="p === pagina()" (click)="pagina.set(p)">{{ p }}</button>
+      }
+      <button type="button" class="pag-btn" [disabled]="pagina() === totalPaginas()" (click)="pagina.set(pagina() + 1)" aria-label="Siguiente">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </footer>
+</section>
+
+<p class="pie">Registros automatizados por visión artificial. Para consultas o aclaraciones clínicas, contacte a coordinación académica.</p>
+
+<!-- Modal de detalle (solo lectura) -->
+@if (seleccionado(); as reg) {
+  @let res = reg.resultado;
+  <div class="modal-fondo" (click)="seleccionado.set(null)">
+    <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="titulo-detalle" (click)="$event.stopPropagation()">
+      <header class="modal-cab">
+        <div>
+          <h3 id="titulo-detalle">Detalle de la Inspección</h3>
+          <p>{{ res.inspection_timestamp | date: 'dd/MM/yyyy • HH:mm' }} • {{ reg.grupo_nombre }} •
+            {{ res.capture_mode === 'upper_body' ? 'Cintura para arriba' : 'Cuerpo completo' }}</p>
+        </div>
+        <button type="button" class="btn-cerrar" aria-label="Cerrar" (click)="seleccionado.set(null)">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <div class="dictamen" [class]="res.overall_status">
+        <strong>
+          @switch (res.overall_status) {
+            @case ('cumple') { <i class="bi bi-shield-check"></i> CUMPLE }
+            @case ('incumple') { <i class="bi bi-shield-exclamation"></i> INCUMPLE }
+            @default { NO EVALUADO }
+          }
+        </strong>
+        <span>{{ res.overall_message }}</span>
+      </div>
+
+      <div class="cifras">
+        <span class="c-cumple">{{ res.summary.compliant_count }} Cumple</span>
+        <span class="c-incumple">{{ res.summary.non_compliant_count }} Incumple</span>
+        <span class="c-no">{{ res.summary.not_evaluated_count }} No evaluado</span>
+      </div>
+
+      @if (res.annotated_image_base64) {
+        <img class="captura" [src]="res.annotated_image_base64" alt="Captura anotada" />
+      }
+
+      <h4>Detalle de los {{ res.summary.total_elements }} elementos</h4>
+      <app-lista-elementos [elementos]="res.elements" />
+    </div>
+  </div>
+}

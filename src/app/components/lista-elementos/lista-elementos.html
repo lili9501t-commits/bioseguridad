@@ -1,0 +1,23 @@
+<ul class="elementos">
+  @for (el of elementos(); track el.element_id) {
+    <li class="elemento" [class]="el.status">
+      <span class="orden">{{ el.order }}</span>
+      <div class="el-info">
+        <strong>{{ el.name }}</strong>
+        <p>{{ el.condition_detail }}</p>
+      </div>
+      <div class="el-estado">
+        <span class="estado">
+          @switch (el.status) {
+            @case ('cumple') { <i class="bi bi-check-circle-fill"></i> CUMPLE }
+            @case ('incumple') { <i class="bi bi-x-circle-fill"></i> INCUMPLE }
+            @default { <i class="bi bi-eye-slash-fill"></i> NO EVALUADO }
+          }
+        </span>
+        @if (el.confidence !== null) {
+          <small>Confianza: {{ el.confidence * 100 | number: '1.0-1' }}%</small>
+        }
+      </div>
+    </li>
+  }
+</ul>

@@ -44,18 +44,19 @@ export const routes: Routes = [
     canActivate: [rolGuard('estudiante')],
     loadComponent: () => import('./components/layout/layout').then((m) => m.Layout),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      { path: '', pathMatch: 'full', redirectTo: 'escaneo' },
       {
-        path: 'inicio',
+        path: 'escaneo',
+        loadComponent: () => import('./pages/escaneo/escaneo').then((m) => m.Escaneo),
+      },
+      {
+        path: 'resultado/:id',
         loadComponent: () =>
-          import('./pages/inicio-estudiante/inicio-estudiante').then((m) => m.InicioEstudiante),
+          import('./pages/resultado-escaneo/resultado-escaneo').then((m) => m.ResultadoEscaneo),
       },
       {
         path: 'historial',
-        loadComponent: () =>
-          import('./pages/historial-inspecciones/historial-inspecciones').then(
-            (m) => m.HistorialInspecciones,
-          ),
+        loadComponent: () => import('./pages/mi-historial/mi-historial').then((m) => m.MiHistorial),
       },
     ],
   },

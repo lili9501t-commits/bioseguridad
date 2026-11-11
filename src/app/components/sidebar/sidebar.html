@@ -6,6 +6,7 @@
       <small>BIOSEGURIDAD IA</small>
     </div>
   </div>
+  <span class="portal">{{ usuario()?.rol === 'estudiante' ? 'PORTAL ESTUDIANTE' : 'PORTAL DOCENTE' }}</span>
 
   <nav>
     @for (item of menu(); track item.ruta) {

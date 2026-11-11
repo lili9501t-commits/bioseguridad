@@ -1,0 +1,31 @@
+:host { display: block; --pizarra: #0f172a; }
+
+.elementos { display: grid; gap: 0.7rem; padding: 0; margin: 0; list-style: none; }
+.elemento {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.85rem 1rem;
+  border: 2px solid #94a3b8; border-left-width: 6px; border-radius: 10px; background: #f8fafc;
+}
+.elemento.cumple { border-color: #16a34a; background: #f0fdf4; }
+.elemento.incumple { border-color: #dc2626; background: #fef2f2; }
+.elemento.no_evaluado { border-color: #94a3b8; background: #f1f5f9; }
+
+.orden {
+  display: grid; place-items: center; flex: none; width: 32px; height: 32px; font-size: 0.95rem;
+  font-weight: 800; color: #fff; border-radius: 50%; background: #64748b;
+}
+.cumple .orden { background: #16a34a; }
+.incumple .orden { background: #dc2626; }
+
+.el-info { flex: 1; min-width: 0; }
+.el-info strong { display: block; font-size: 1.05rem; color: var(--pizarra); }
+.el-info p { margin: 0.15rem 0 0; font-size: 0.9rem; line-height: 1.35; color: #1e293b; }
+
+.el-estado { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex: none; }
+.el-estado small { font-size: 0.8rem; font-weight: 600; color: #1e293b; }
+.estado {
+  display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.75rem;
+  font-size: 0.85rem; font-weight: 800; letter-spacing: 0.03em; white-space: nowrap;
+  color: #fff; border-radius: 999px; background: #64748b;
+}
+.cumple .estado { background: #16a34a; }
+.incumple .estado { background: #dc2626; }
