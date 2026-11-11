@@ -1,0 +1,94 @@
+<div class="login-shell">
+  <!-- Panel institucional -->
+  <section class="panel-marca">
+    <span class="ubicacion">USFX • SUCRE, BOLIVIA</span>
+
+    <div class="marca-contenido">
+      <div class="marca-icono"><i class="bi bi-shield-plus"></i></div>
+      <span class="etiqueta">FACULTAD DE ODONTOLOGÍA</span>
+      <h1>USFX - Facultad de Odontología</h1>
+      <p class="subtitulo">
+        Sistema de Control Visual de Bioseguridad mediante Inteligencia Artificial
+      </p>
+
+    </div>
+
+    <footer class="marca-pie">
+      <span>Universidad Mayor, Real y Pontificia de San Francisco Xavier de Chuquisaca</span>
+    </footer>
+  </section>
+
+  <!-- Panel de acceso -->
+  <section class="panel-acceso">
+    <div class="tarjeta">
+      <div class="tarjeta-icono"><i class="bi bi-box-arrow-in-right"></i></div>
+      <h2>Acceso al Sistema</h2>
+      <p class="tarjeta-sub">Ingrese su correo y contraseña</p>
+
+
+      <form [formGroup]="form" (ngSubmit)="ingresar()" novalidate>
+        <div class="campo">
+          <label for="correo">CORREO</label>
+          <div class="input-icono" [class.invalido]="invalido('correo')">
+            <i class="bi bi-person"></i>
+            <input
+              id="correo"
+              type="email"
+              formControlName="correo"
+              autocomplete="username"
+              placeholder="ejemplo@gmail.com"
+            />
+          </div>
+          @if (invalido('correo')) {
+            <small class="msg-error">Ingrese un correo válido.</small>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="password">CONTRASEÑA</label>
+          <div class="input-icono" [class.invalido]="invalido('password')">
+            <i class="bi bi-lock"></i>
+            <input
+              id="password"
+              [type]="verPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              class="ojo"
+              (click)="verPassword.set(!verPassword())"
+              [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+            >
+              <i class="bi" [class.bi-eye]="!verPassword()" [class.bi-eye-slash]="verPassword()"></i>
+            </button>
+          </div>
+          @if (invalido('password')) {
+            <small class="msg-error">La contraseña debe tener al menos 6 caracteres.</small>
+          }
+          <div class="olvido-fila">
+            <a href="#" class="olvido">¿Olvidó su contraseña?</a>
+          </div>
+        </div>
+
+        @if (error()) {
+          <div class="alerta-error" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> {{ error() }}
+          </div>
+        }
+
+        <button type="submit" class="btn-ingresar" [disabled]="cargando()">
+          Iniciar Sesión <i class="bi bi-arrow-right"></i>
+        </button>
+      </form>
+
+    </div>
+
+    <p class="copy">
+      © 2026 Universidad San Francisco Xavier de Chuquisaca • Facultad de Odontología
+      <br />
+      <span>Laboratorio de Visión por Computadora e Inteligencia Artificial Aplicada a la Salud</span>
+    </p>
+  </section>
+</div>

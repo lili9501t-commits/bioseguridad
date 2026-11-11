@@ -1,0 +1,37 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  height: 100vh;
+  padding: 1.25rem 1rem;
+  color: #fff;
+  background: #0f5f56;
+}
+.logo { display: flex; align-items: center; gap: 0.7rem; padding: 0 0.5rem 1.5rem; }
+.logo-icono {
+  display: grid; place-items: center; width: 38px; height: 38px;
+  border-radius: 10px; background: rgba(255, 255, 255, 0.15); font-size: 1.2rem;
+}
+.logo strong { display: block; font-size: 0.95rem; }
+.logo small { font-size: 0.7rem; opacity: 0.75; }
+
+nav { display: flex; flex-direction: column; gap: 0.25rem; flex: 1; }
+nav a {
+  display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 0.75rem;
+  font-size: 0.85rem; color: rgba(255, 255, 255, 0.85); text-decoration: none; border-radius: 8px;
+}
+nav a:hover { background: rgba(255, 255, 255, 0.1); }
+nav a.activo { color: #0f5f56; font-weight: 600; background: #99f6e4; }
+
+.perfil {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.75rem;
+  border-radius: 10px; background: rgba(0, 0, 0, 0.15);
+}
+.avatar {
+  display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+  font-weight: 700; color: #0f766e; border-radius: 50%; background: #ccfbf1;
+}
+.perfil-datos { flex: 1; min-width: 0; font-size: 0.78rem; }
+.perfil-datos strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rol { opacity: 0.75; }
+.perfil button { padding: 0.25rem; color: #fff; border: 0; background: none; font-size: 1.1rem; }

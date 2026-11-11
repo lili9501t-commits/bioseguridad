@@ -1,0 +1,87 @@
+:host { --verde: #0d9488; --verde-osc: #0f5f56; --borde: #e2e8f0; --gris: #64748b; }
+
+.modal-fondo {
+  position: fixed; inset: 0; z-index: 1050; display: grid; place-items: center;
+  padding: 1rem; background: rgba(15, 23, 42, 0.45);
+}
+.modal-caja {
+  width: 100%; max-width: 600px; max-height: calc(100vh - 2rem); overflow-y: auto;
+  padding: 1.5rem; border-radius: 12px; background: #fff; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+.modal-cab { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+.modal-cab h3 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.modal-cab p { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--gris); }
+
+.pestanias {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 1.25rem;
+  border-radius: 8px; background: #f1f5f9;
+}
+.pestanias button {
+  padding: 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--gris);
+  border: 0; border-radius: 6px; background: transparent;
+}
+.pestanias button.activa { color: var(--verde-osc); background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1); }
+
+.foto-fila { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.foto {
+  display: grid; place-items: center; flex: none; width: 72px; height: 72px; overflow: hidden;
+  font-size: 1.8rem; color: #94a3b8; border: 1px dashed #cbd5e1; border-radius: 10px; background: #f8fafc;
+}
+.foto img { width: 100%; height: 100%; object-fit: cover; }
+.lbl, .campo label {
+  display: block; margin-bottom: 0.3rem; font-size: 0.68rem; font-weight: 700;
+  letter-spacing: 0.04em; color: #334155;
+}
+
+.fila { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.campo { margin-bottom: 0.9rem; }
+.campo input, .campo select {
+  width: 100%; padding: 0.5rem 0.65rem; font-size: 0.85rem;
+  border: 1px solid var(--borde); border-radius: 6px; background: #f8fafc;
+}
+.campo input:disabled { color: var(--gris); background: #f1f5f9; }
+.campo input:focus, .campo select:focus {
+  border-color: var(--verde); outline: 0; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15); background: #fff;
+}
+.invalido { border-color: #dc2626 !important; }
+.err { font-size: 0.7rem; color: #dc2626; }
+.ayuda { display: block; font-size: 0.7rem; color: #94a3b8; }
+.check { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 1rem; font-size: 0.82rem; }
+
+.alerta-error {
+  padding: 0.55rem 0.75rem; margin-bottom: 1rem; font-size: 0.78rem; color: #b91c1c;
+  border: 1px solid #fecaca; border-radius: 8px; background: #fef2f2;
+}
+
+.btn-primario, .btn-secundario {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.55rem 1rem;
+  font-size: 0.82rem; font-weight: 600; border-radius: 6px; cursor: pointer;
+}
+.btn-primario { color: #fff; border: 0; background: var(--verde-osc); }
+.btn-primario:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-secundario { color: var(--verde-osc); border: 1px solid var(--borde); background: #fff; }
+.btn-chico { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+.btn-link { margin-left: 0.5rem; padding: 0; font-size: 0.75rem; color: #dc2626; border: 0; background: none; }
+.btn-icono {
+  display: grid; place-items: center; width: 30px; height: 30px; color: var(--gris);
+  border: 1px solid var(--borde); border-radius: 6px; background: #fff;
+}
+.modal-pie { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
+
+.zona-archivo {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 1.5rem;
+  margin-bottom: 1rem; font-size: 0.8rem; text-align: center; color: var(--gris); cursor: pointer;
+  border: 2px dashed #cbd5e1; border-radius: 10px; background: #f8fafc;
+}
+.zona-archivo:hover { border-color: var(--verde); }
+.zona-archivo i { font-size: 1.8rem; color: var(--verde); }
+.zona-archivo strong { color: #0f172a; }
+.zona-archivo code { font-size: 0.72rem; color: var(--verde-osc); }
+
+.resumen { margin-bottom: 0.5rem; font-size: 0.8rem; }
+.tabla-prev { max-height: 220px; margin-bottom: 1rem; overflow: auto; border: 1px solid var(--borde); border-radius: 8px; }
+.tabla-prev table { width: 100%; font-size: 0.75rem; border-collapse: collapse; }
+.tabla-prev th { position: sticky; top: 0; padding: 0.4rem 0.6rem; text-align: left; background: #f1f5f9; }
+.tabla-prev td { padding: 0.35rem 0.6rem; border-top: 1px solid #f1f5f9; }
+.fila-error { background: #fef2f2; }
+.ok { color: var(--verde); }

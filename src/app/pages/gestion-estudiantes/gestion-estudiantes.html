@@ -1,1 +1,181 @@
-<p>gestion-estudiantes works!</p>
+<span class="sobre-titulo"><i class="bi bi-person-vcard"></i> ACREDITACIÓN & CONTROL DOCENTE</span>
+
+<header class="encabezado">
+  <div>
+    <h1>Gestión de Estudiantes</h1>
+  </div>
+  <button type="button" class="btn-primario" (click)="abrirCrear()">
+    <i class="bi bi-person-plus"></i> Crear Estudiante
+  </button>
+</header>
+
+<!-- Indicadores -->
+<section class="indicadores">
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">TOTAL MATRICULADOS</span>
+      <span class="ind-valor">{{ estudiantes().length }}</span>
+      <span class="ind-sub">Estudiantes registrados</span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-people"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">ACTIVOS</span>
+      <span class="ind-valor verde">{{ activos() }}</span>
+      <span class="ind-sub">● Habilitados para práctica</span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-shield-check"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">INACTIVOS</span>
+      <span class="ind-valor gris">{{ inactivos() }}</span>
+      <span class="ind-sub">No habilitados</span>
+    </div>
+    <span class="ind-icono gris"><i class="bi bi-person-slash"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">GESTIÓN VIGENTE</span>
+      <span class="ind-valor">{{ anioActual }}</span>
+      <span class="ind-sub">{{ cursosHabilitados().length }} grupos habilitados</span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-calendar3"></i></span>
+  </div>
+</section>
+
+<!-- Filtros -->
+<section class="filtros">
+  <div class="buscador">
+    <i class="bi bi-search"></i>
+    <input type="search" placeholder="Buscar por Matrícula/RU, nombre o correo..." [value]="busqueda()" (input)="busqueda.set($any($event.target).value)" />
+  </div>
+  <select class="select-filtro" aria-label="Filtrar por grupo clínico" [value]="filtroCurso() ?? ''" (change)="filtroCurso.set($any($event.target).value ? +$any($event.target).value : null)">
+    <option value="">Todos los grupos clínicos</option>
+    @for (c of cursos(); track c.id) {
+      <option [value]="c.id">{{ c.nombre }} - Grupo {{ c.grupo }}</option>
+    }
+  </select>
+  <div class="segmentado" role="group" aria-label="Filtrar por estado">
+    <button type="button" [class.activo]="filtroEstado() === 'todos'" (click)="filtroEstado.set('todos')">Todos</button>
+    <button type="button" [class.activo]="filtroEstado() === 'activos'" (click)="filtroEstado.set('activos')">Activos</button>
+    <button type="button" [class.activo]="filtroEstado() === 'inactivos'" (click)="filtroEstado.set('inactivos')">Inactivos</button>
+  </div>
+</section>
+
+<!-- Tabla -->
+<section class="panel">
+  <div class="panel-cab">
+    <h2><i class="bi bi-clipboard2-check"></i> Listado de Estudiantes</h2>
+    <span class="chip-mono">{{ filtrados().length }} de {{ estudiantes().length }} registros mostrados</span>
+  </div>
+
+  <div class="tabla-envoltura">
+    <table>
+      <thead>
+        <tr>
+          <th>ESTUDIANTE</th>
+          <th>MATRÍCULA / RU</th>
+          <th>CARRERA</th>
+          <th>GRUPO CLÍNICO</th>
+          <th>ESTADO</th>
+          <th class="text-end">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (e of paginaActual(); track e.id) {
+          <tr>
+            <td>
+              <div class="persona">
+                @if (e.photo_url) {
+                  <img class="avatar" [src]="e.photo_url" alt="" />
+                } @else {
+                  <span class="avatar" [class.avatar-off]="!e.is_active">{{ iniciales(e) }}</span>
+                }
+                <div>
+                  <strong>{{ e.first_name }} {{ e.last_name }}</strong>
+                  <small>{{ e.email }}</small>
+                </div>
+              </div>
+            </td>
+            <td><span class="codigo">{{ e.student_code }}</span></td>
+            <td><span class="chip-carrera">{{ e.career }}</span></td>
+            <td>
+              @if (cursoDe(e); as c) {
+                <strong class="grupo">{{ c.nombre }} - Grupo {{ c.grupo }}</strong>
+                <small class="grupo-sub"><i class="bi bi-clock"></i> Turno {{ c.turno }} • {{ c.sigla }}</small>
+              } @else {
+                <small class="text-secondary">Sin grupo asignado</small>
+              }
+            </td>
+            <td>
+              <span class="estado" [class.estado-on]="e.is_active">● {{ e.is_active ? 'Activo' : 'Inactivo' }}</span>
+            </td>
+            <td>
+              <div class="acciones">
+                <button type="button" class="btn-icono" title="Editar" [attr.aria-label]="'Editar ' + e.first_name" (click)="abrirEditar(e)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                @if (e.has_history) {
+                  <span class="chip-historial" title="Tiene inspecciones registradas: no se puede eliminar">Tiene historial</span>
+                } @else {
+                  <button type="button" class="btn-icono peligro" title="Eliminar" [attr.aria-label]="'Eliminar ' + e.first_name" (click)="eliminar(e)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="vacio">
+              <i class="bi bi-person-x"></i> No se encontraron estudiantes con los filtros seleccionados.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <footer class="paginacion">
+    <span>Mostrando <strong>{{ rango().desde }} a {{ rango().hasta }}</strong> de <strong>{{ rango().total }}</strong> estudiantes</span>
+    <div class="pag-controles">
+      <label>Filas:
+        <select [value]="porPagina()" (change)="porPagina.set(+$any($event.target).value)">
+          <option value="5">5 por página</option>
+          <option value="10">10 por página</option>
+          <option value="20">20 por página</option>
+        </select>
+      </label>
+      <button type="button" class="pag-btn" [disabled]="pagina() === 1" (click)="pagina.set(pagina() - 1)" aria-label="Anterior">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      @for (p of paginas(); track p) {
+        <button type="button" class="pag-btn" [class.activo]="p === pagina()" (click)="pagina.set(p)">{{ p }}</button>
+      }
+      <button type="button" class="pag-btn" [disabled]="pagina() === totalPaginas()" (click)="pagina.set(pagina() + 1)" aria-label="Siguiente">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </footer>
+</section>
+
+<p class="nota">
+  <i class="bi bi-info-circle"></i>
+  Los estudiantes con inspecciones registradas por Inteligencia Artificial no podrán ser eliminados para mantener la trazabilidad de auditoría de bioseguridad.
+</p>
+
+@if (aviso()) {
+  <div class="toast-aviso" role="status"><i class="bi bi-check-circle-fill"></i> {{ aviso() }}</div>
+}
+
+@if (modalAbierto()) {
+  <app-estudiante-modal
+    [estudiante]="editando()"
+    [cursos]="cursosHabilitados()"
+    [grupoInicial]="filtroCurso()"
+    (cerrar)="modalAbierto.set(false)"
+    (guardado)="alGuardar($event)"
+  />
+}

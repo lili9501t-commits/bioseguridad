@@ -1,0 +1,211 @@
+<nav class="migas">
+  <span class="miga-raiz">FACULTAD DE ODONTOLOGÍA</span>
+  <span>/</span>
+  <strong>MIS CURSOS ({{ anioActual }})</strong>
+</nav>
+
+<header class="encabezado">
+  <div>
+    <h1>Gestión de Cursos Clínicos</h1>
+
+  </div>
+  <button type="button" class="btn-primario" (click)="abrirCrear()">
+    <i class="bi bi-plus-circle"></i> Crear Nuevo Curso
+  </button>
+</header>
+
+<!-- Indicadores -->
+<section class="indicadores">
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">TOTAL CURSOS ACTIVOS</span>
+      <span class="ind-valor">{{ totalActivos() }} <small>de {{ cursos().length }} cursos</small></span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-mortarboard"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">ESTUDIANTES ASIGNADOS</span>
+      <span class="ind-valor">{{ totalEstudiantes() }} <small>en cursos activos</small></span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-people"></i></span>
+  </div>
+  <div class="indicador">
+    <div>
+      <span class="ind-titulo">GESTIÓN VIGENTE</span>
+      <span class="ind-valor">{{ anioActual }}</span>
+    </div>
+    <span class="ind-icono"><i class="bi bi-calendar3"></i></span>
+  </div>
+</section>
+
+<!-- Barra de filtros -->
+<section class="filtros">
+  <div class="buscador">
+    <i class="bi bi-search"></i>
+    <input
+      type="search"
+      placeholder="Buscar por nombre, sigla, grupo o año..."
+      [value]="busqueda()"
+      (input)="busqueda.set($any($event.target).value)"
+    />
+  </div>
+  <select
+    class="select-filtro"
+    [value]="filtroEstado()"
+    (change)="filtroEstado.set($any($event.target).value)"
+    aria-label="Filtrar por estado"
+  >
+    <option value="todos">Todos los cursos</option>
+    <option value="activos">Solo habilitados</option>
+    <option value="inactivos">Solo deshabilitados</option>
+  </select>
+</section>
+
+<!-- Tarjetas de cursos -->
+<section class="grilla">
+  @for (curso of cursosFiltrados(); track curso.id) {
+    <article class="tarjeta" [class.inactiva]="!curso.activo">
+      <div class="tarjeta-top">
+        <span class="sigla">{{ curso.sigla }}</span>
+        <div class="acciones-top">
+          <button
+            type="button"
+            class="btn-icono"
+            title="Editar curso"
+            [attr.aria-label]="'Editar ' + curso.nombre"
+            (click)="abrirEditar(curso)"
+          >
+            <i class="bi bi-pencil"></i>
+          </button>
+          <label class="switch" [title]="curso.activo ? 'Deshabilitar curso' : 'Habilitar curso'">
+            <input
+              type="checkbox"
+              [checked]="curso.activo"
+              (change)="cambiarEstado(curso, $event)"
+              [attr.aria-label]="(curso.activo ? 'Deshabilitar ' : 'Habilitar ') + curso.nombre"
+            />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <h2>{{ curso.nombre }} - Grupo {{ curso.grupo }}</h2>
+      <div class="meta">
+        <span><i class="bi" [class.bi-sun]="curso.turno === 'Mañana'" [class.bi-moon]="curso.turno === 'Tarde'"></i> Turno {{ curso.turno }}</span>
+        <span class="sep">•</span>
+        <span [class.estado-on]="curso.activo" [class.estado-off]="!curso.activo">
+          ● {{ curso.activo ? 'HABILITADO' : 'DESHABILITADO' }}
+        </span>
+      </div>
+
+      <dl class="detalle">
+        <div>
+          <dt><i class="bi bi-people"></i> Estudiantes</dt>
+          <dd>{{ estudiantesDe(curso) }}</dd>
+        </div>
+        <div>
+          <dt><i class="bi bi-calendar3"></i> Año</dt>
+          <dd>{{ curso.anio }}</dd>
+        </div>
+      </dl>
+
+      <div class="registro">
+        <span>Registrado:</span>
+        <strong>{{ curso.fechaRegistro | date: 'dd/MM/yyyy • HH:mm' }}</strong>
+      </div>
+
+      <div class="tarjeta-pie">
+        <a
+          class="btn-secundario"
+          [class.deshabilitado]="!curso.activo"
+          [routerLink]="['/docente/estudiantes']"
+          [queryParams]="{ curso: curso.id }"
+        >
+          <i class="bi bi-person-gear"></i> Gestionar Alumnos
+        </a>
+        <a class="btn-oscuro" [routerLink]="['/docente/historial']" [queryParams]="{ curso: curso.id }">
+          <i class="bi bi-clipboard-data"></i> Ver Historial
+        </a>
+      </div>
+    </article>
+  } @empty {
+    <div class="vacio">
+      <i class="bi bi-folder2-open"></i>
+      <p>No se encontraron cursos.</p>
+      <button type="button" class="btn-primario" (click)="abrirCrear()">
+        <i class="bi bi-plus-circle"></i> Crear Nuevo Curso
+      </button>
+    </div>
+  }
+</section>
+
+<!-- Modal crear / editar -->
+@if (modalAbierto()) {
+  <div class="modal-fondo" (click)="cerrarModal()">
+    <div
+      class="modal-caja"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="titulo-modal"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="modal-cab">
+        <h3 id="titulo-modal">{{ cursoEditando() ? 'Editar Curso' : 'Crear Nuevo Curso' }}</h3>
+        <button type="button" class="btn-icono" aria-label="Cerrar" (click)="cerrarModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </header>
+
+      <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+        <div class="fila">
+          <div class="campo">
+            <label for="sigla">SIGLA</label>
+            <input id="sigla" formControlName="sigla" placeholder="ODO-401" [class.invalido]="invalido('sigla')" />
+            @if (invalido('sigla')) { <small>Ingrese la sigla.</small> }
+          </div>
+          <div class="campo">
+            <label for="grupo">GRUPO / PARALELO</label>
+            <input id="grupo" formControlName="grupo" placeholder="A" [class.invalido]="invalido('grupo')" />
+            @if (invalido('grupo')) { <small>Ingrese el grupo.</small> }
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="nombre">NOMBRE DEL CURSO</label>
+          <input id="nombre" formControlName="nombre" placeholder="Clínica Integral I" [class.invalido]="invalido('nombre')" />
+          @if (invalido('nombre')) { <small>Ingrese el nombre del curso.</small> }
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="turno">TURNO</label>
+            <select id="turno" formControlName="turno">
+              <option value="Mañana">Mañana</option>
+              <option value="Tarde">Tarde</option>
+            </select>
+          </div>
+          <div class="campo">
+            <label for="anio">AÑO</label>
+            <input id="anio" type="number" formControlName="anio" [class.invalido]="invalido('anio')" />
+            @if (invalido('anio')) { <small>Año no válido.</small> }
+          </div>
+        </div>
+
+        @if (cursoEditando(); as c) {
+          <p class="nota-registro">
+            <i class="bi bi-clock"></i> Registrado el {{ c.fechaRegistro | date: 'dd/MM/yyyy' }} a las
+            {{ c.fechaRegistro | date: 'HH:mm' }}
+          </p>
+        }
+
+        <footer class="modal-pie">
+          <button type="button" class="btn-secundario" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primario">
+            <i class="bi bi-check2"></i> {{ cursoEditando() ? 'Guardar Cambios' : 'Crear Curso' }}
+          </button>
+        </footer>
+      </form>
+    </div>
+  </div>
+}

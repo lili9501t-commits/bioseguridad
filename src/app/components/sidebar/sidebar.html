@@ -1,1 +1,30 @@
-<p>sidebar works!</p>
+<aside class="sidebar">
+  <div class="logo">
+    <span class="logo-icono"><i class="bi bi-shield-plus"></i></span>
+    <div>
+      <strong>USFX Odontología</strong>
+      <small>BIOSEGURIDAD IA</small>
+    </div>
+  </div>
+
+  <nav>
+    @for (item of menu(); track item.ruta) {
+      <a [routerLink]="item.ruta" routerLinkActive="activo">
+        <i class="bi" [class]="item.icono"></i> {{ item.etiqueta }}
+      </a>
+    }
+  </nav>
+
+  @if (usuario(); as u) {
+    <div class="perfil">
+      <div class="avatar">{{ u.nombre.charAt(0) }}</div>
+      <div class="perfil-datos">
+        <strong>{{ u.nombre }}</strong>
+        <span class="rol">{{ u.rol === 'docente' ? 'Docente' : 'Estudiante' }}</span>
+      </div>
+      <button type="button" (click)="cerrarSesion()" title="Cerrar sesión" aria-label="Cerrar sesión">
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
+    </div>
+  }
+</aside>

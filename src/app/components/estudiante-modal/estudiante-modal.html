@@ -1,0 +1,170 @@
+<div class="modal-fondo" (click)="cerrar.emit()">
+  <div class="modal-caja" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-est" (click)="$event.stopPropagation()">
+    <header class="modal-cab">
+      <div>
+        <h3 id="titulo-modal-est">{{ estudiante() ? 'Editar Estudiante' : 'Crear Estudiante' }}</h3>
+        <p>Los datos se registrarán en el padrón de estudiantes clínicos.</p>
+      </div>
+      <button type="button" class="btn-icono" aria-label="Cerrar" (click)="cerrar.emit()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+
+    @if (!estudiante()) {
+      <div class="pestanias" role="tablist">
+        <button type="button" role="tab" [class.activa]="pestania() === 'individual'" [attr.aria-selected]="pestania() === 'individual'" (click)="pestania.set('individual'); error.set(null)">
+          <i class="bi bi-person-plus"></i> Registro Individual
+        </button>
+        <button type="button" role="tab" [class.activa]="pestania() === 'excel'" [attr.aria-selected]="pestania() === 'excel'" (click)="pestania.set('excel'); error.set(null)">
+          <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva Excel
+        </button>
+      </div>
+    }
+
+    @if (pestania() === 'individual') {
+      <form [formGroup]="form" (ngSubmit)="guardarIndividual()" novalidate>
+        <div class="foto-fila">
+          <div class="foto">
+            @if (fotoPreview(); as src) {
+              <img [src]="src" alt="Foto institucional" />
+            } @else {
+              <i class="bi bi-person-bounding-box"></i>
+            }
+          </div>
+          <div>
+            <span class="lbl">FOTO INSTITUCIONAL</span>
+            <label class="btn-secundario btn-chico">
+              <i class="bi bi-upload"></i> {{ fotoPreview() ? 'Cambiar foto' : 'Subir foto' }}
+              <input type="file" accept="image/png,image/jpeg" hidden (change)="seleccionarFoto($event)" />
+            </label>
+            @if (fotoPreview()) {
+              <button type="button" class="btn-link" (click)="fotoPreview.set(null)">Quitar</button>
+            }
+            <small class="ayuda">JPG o PNG, máximo 2 MB.</small>
+          </div>
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="student_code">MATRÍCULA / RU</label>
+            <input id="student_code" formControlName="student_code" placeholder="24-1589" [class.invalido]="invalido('student_code')" />
+            @if (invalido('student_code')) { <small class="err">Formato: 24-1589</small> }
+          </div>
+          <div class="campo">
+            <label for="career">CARRERA</label>
+            <input id="career" formControlName="career" />
+          </div>
+        </div>
+
+        <div class="fila">
+          <div class="campo">
+            <label for="first_name">NOMBRES</label>
+            <input id="first_name" formControlName="first_name" placeholder="Andrea Valeria" [class.invalido]="invalido('first_name')" />
+            @if (invalido('first_name')) { <small class="err">Ingrese los nombres.</small> }
+          </div>
+          <div class="campo">
+            <label for="last_name">APELLIDOS</label>
+            <input id="last_name" formControlName="last_name" placeholder="Flores Choque" [class.invalido]="invalido('last_name')" />
+            @if (invalido('last_name')) { <small class="err">Ingrese los apellidos.</small> }
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="email">CORREO</label>
+          <input id="email" type="email" formControlName="email" placeholder="ejemplo@gmail.com" [class.invalido]="invalido('email')" />
+          @if (invalido('email')) { <small class="err">Ingrese un correo válido.</small> }
+        </div>
+
+        <div class="campo">
+          <label for="clinical_group">GRUPO CLÍNICO</label>
+          <select id="clinical_group" formControlName="clinical_group" [class.invalido]="invalido('clinical_group')">
+            <option [ngValue]="null" disabled>Seleccione un grupo...</option>
+            @for (c of cursos(); track c.id) {
+              <option [ngValue]="c.id">{{ etiquetaCurso(c) }}</option>
+            }
+          </select>
+          @if (invalido('clinical_group')) { <small class="err">Seleccione un grupo clínico.</small> }
+        </div>
+
+        @if (estudiante()) {
+          <label class="check">
+            <input type="checkbox" formControlName="is_active" /> Estudiante activo
+          </label>
+        }
+
+        @if (error()) {
+          <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ error() }}</div>
+        }
+
+        <footer class="modal-pie">
+          <button type="button" class="btn-secundario" (click)="cerrar.emit()">Cancelar</button>
+          <button type="submit" class="btn-primario">
+            <i class="bi bi-check2"></i> {{ estudiante() ? 'Guardar Cambios' : 'Registrar Estudiante' }}
+          </button>
+        </footer>
+      </form>
+    } @else {
+      <div class="excel">
+        <div class="campo">
+          <label for="grupo_excel">ASIGNAR AL GRUPO CLÍNICO</label>
+          <select id="grupo_excel" [value]="grupoExcel() ?? ''" (change)="grupoExcel.set($any($event.target).value ? +$any($event.target).value : null)">
+            <option value="" disabled>Seleccione un grupo...</option>
+            @for (c of cursos(); track c.id) {
+              <option [value]="c.id">{{ etiquetaCurso(c) }}</option>
+            }
+          </select>
+        </div>
+
+        <label class="zona-archivo">
+          <i class="bi bi-cloud-arrow-up"></i>
+          <strong>{{ archivoExcel() ?? 'Seleccione el archivo Excel (.xlsx)' }}</strong>
+          <span>La primera fila debe tener los encabezados:</span>
+          <code>student_code · first_name · last_name · email</code>
+          <span class="ayuda">(también se aceptan: Matrícula, Nombres, Apellidos, Correo)</span>
+          <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden (change)="seleccionarExcel($event)" />
+        </label>
+
+        @if (leyendoExcel()) {
+          <p class="ayuda">Leyendo archivo...</p>
+        }
+
+        @if (filasExcel().length) {
+          <p class="resumen">
+            <strong>{{ filasValidas().length }}</strong> de {{ filasExcel().length }} filas válidas
+          </p>
+          <div class="tabla-prev">
+            <table>
+              <thead>
+                <tr><th>Matrícula</th><th>Nombres</th><th>Apellidos</th><th>Correo</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (f of filasExcel(); track $index) {
+                  <tr [class.fila-error]="f.error">
+                    <td>{{ f.datos.student_code }}</td>
+                    <td>{{ f.datos.first_name }}</td>
+                    <td>{{ f.datos.last_name }}</td>
+                    <td>{{ f.datos.email }}</td>
+                    <td>
+                      @if (f.error) { <span class="err">{{ f.error }}</span> } @else { <i class="bi bi-check-circle-fill ok"></i> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (error()) {
+          <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ error() }}</div>
+        }
+
+        <footer class="modal-pie">
+          <button type="button" class="btn-secundario" (click)="cerrar.emit()">Cancelar</button>
+          <button type="button" class="btn-primario" [disabled]="!filasValidas().length" (click)="importarExcel()">
+            <i class="bi bi-upload"></i> Importar {{ filasValidas().length || '' }} Estudiantes
+          </button>
+        </footer>
+      </div>
+    }
+  </div>
+</div>
