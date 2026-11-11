@@ -62,4 +62,53 @@ describe('Escaneo', () => {
     expect(nuevo.student_code).toBe('24-1990');
     expect(nav).toHaveBeenCalledWith(['/estudiante/resultado', nuevo.id]);
   });
+
+  describe('HU-08: subir fotografía', () => {
+    async function irAModoFoto() {
+      const tabs = el.querySelectorAll<HTMLButtonElement>('.pestanias-captura .nav-link');
+      tabs[1].click();
+      await fixture.whenStable();
+    }
+
+    function elegirArchivo(archivo: File) {
+      const input = el.querySelector<HTMLInputElement>('.zona-foto input[type="file"]')!;
+      Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+      input.dispatchEvent(new Event('change'));
+    }
+
+    it('oculta los botones de cámara y muestra la zona de carga', async () => {
+      await irAModoFoto();
+      expect(el.querySelector('.btn-activar')).toBeNull();
+      expect(el.querySelector('.btn-capturar')).toBeNull();
+      expect(el.querySelector('.zona-foto')).not.toBeNull();
+      expect(el.querySelector('.btn-analizar')?.textContent).toContain('Analizar Fotografía y Ver Resultados');
+    });
+
+    it('rechaza archivos que no son JPG/PNG', async () => {
+      await irAModoFoto();
+      elegirArchivo(new File(['x'], 'notas.pdf', { type: 'application/pdf' }));
+      await fixture.whenStable();
+      expect(el.querySelector('.alerta-error')?.textContent).toContain('JPG');
+    });
+
+    it('envía la foto a /inspections/evaluate-image y redirige a resultados', async () => {
+      const nav = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+      await irAModoFoto();
+      elegirArchivo(new File(['img'], 'foto.png', { type: 'image/png' }));
+      await new Promise((r) => setTimeout(r, 20)); // FileReader
+      await fixture.whenStable();
+      expect(el.querySelector('.preview img')).not.toBeNull();
+
+      el.querySelector<HTMLButtonElement>('.btn-analizar')!.click();
+      const req = http.expectOne(`${api.baseUrl}/inspections/evaluate-image`);
+      const cuerpo = req.request.body as FormData;
+      expect(cuerpo.get('student_code')).toBe('24-1990');
+      expect(cuerpo.get('capture_mode')).toBe('upper_body');
+      expect((cuerpo.get('file') as File).name).toBe('foto.png');
+      req.flush({ overall_status: 'cumple', elements: [], summary: {}, image_quality: { warnings: [] } });
+
+      const nuevo = TestBed.inject(Inspecciones).registros()[0];
+      expect(nav).toHaveBeenCalledWith(['/estudiante/resultado', nuevo.id]);
+    });
+  });
 });

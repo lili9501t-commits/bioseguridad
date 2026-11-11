@@ -57,49 +57,119 @@
       </div>
     </div>
 
-    <!-- Controles de cámara + captura -->
-    <div class="controles">
-      <button type="button" class="btn-activar" [disabled]="procesandoCamara() || capturando()" (click)="activarCamara()">
-        <i class="bi bi-camera-video"></i> {{ camaraActiva() ? 'Reiniciar Cámara' : 'Activar Cámara' }}
-      </button>
-      <button type="button" class="btn-apagar" [disabled]="!camaraActiva() || procesandoCamara() || capturando()" (click)="apagarCamara()">
-        <i class="bi bi-camera-video-off"></i> Apagar Cámara
-      </button>
-      <button type="button" class="btn-capturar" [disabled]="capturando() || !camaraActiva() || !grupo() || !estudiante()?.is_active" (click)="capturar()">
-        @if (capturando()) {
-          <span class="spinner-border spinner-border-sm"></span> Analizando...
+    <!-- HU-08: Selector de modo de captura -->
+    <ul class="nav nav-pills pestanias-captura" role="tablist">
+      <li class="nav-item">
+        <button type="button" class="nav-link" role="tab" [class.active]="modoCaptura() === 'camara'" [attr.aria-selected]="modoCaptura() === 'camara'" [disabled]="capturando()" (click)="cambiarModoCaptura('camara')">
+          <i class="bi bi-camera-video"></i> Cámara en Vivo
+        </button>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link" role="tab" [class.active]="modoCaptura() === 'foto'" [attr.aria-selected]="modoCaptura() === 'foto'" [disabled]="capturando()" (click)="cambiarModoCaptura('foto')">
+          <i class="bi bi-cloud-arrow-up"></i> Subir Fotografía (Sin Cámara)
+        </button>
+      </li>
+    </ul>
+
+    @if (modoCaptura() === 'camara') {
+      <!-- Controles de cámara + captura -->
+      <div class="controles">
+        <button type="button" class="btn-activar" [disabled]="procesandoCamara() || capturando()" (click)="activarCamara()">
+          <i class="bi bi-camera-video"></i> {{ camaraActiva() ? 'Reiniciar Cámara' : 'Activar Cámara' }}
+        </button>
+        <button type="button" class="btn-apagar" [disabled]="!camaraActiva() || procesandoCamara() || capturando()" (click)="apagarCamara()">
+          <i class="bi bi-camera-video-off"></i> Apagar Cámara
+        </button>
+        <button type="button" class="btn-capturar" [disabled]="capturando() || !camaraActiva() || !grupo() || !estudiante()?.is_active" (click)="capturar()">
+          @if (capturando()) {
+            <span class="spinner-border spinner-border-sm"></span> Analizando...
+          } @else {
+            <i class="bi bi-camera"></i> Capturar y Ver Mis Resultados
+          }
+        </button>
+      </div>
+
+      <!-- Barra: estado en vivo + instrucción -->
+      <div class="barra-vivo">
+        <span class="chip-estado" [class.on]="camaraActiva()">
+          <span class="rec"></span>
+          {{ camaraActiva() ? 'EN VIVO' : 'CÁMARA APAGADA' }}
+          @if (camaraActiva() && infoCamara()) { <small>({{ infoCamara() }})</small> }
+        </span>
+        <p><i class="bi bi-person-bounding-box"></i> Colóquese frente a la cámara respetando la guía de encuadre para la verificación automática por visión artificial antes de ingresar al box clínico.</p>
+      </div>
+
+      <div class="video">
+        @if (camaraActiva()) {
+          <img [src]="urlStream()" alt="Video en vivo de la cámara" (error)="streamConError()" />
         } @else {
-          <i class="bi bi-camera"></i> Capturar y Ver Mis Resultados
+          <div class="video-apagado">
+            <i class="bi bi-camera-video-off"></i>
+            <strong>Cámara apagada</strong>
+            <span>Presione "Activar Cámara" para iniciar el escaneo.</span>
+          </div>
         }
-      </button>
-    </div>
+        @if (capturando()) {
+          <div class="video-overlay"><span class="spinner-border"></span> Analizando su bioseguridad...</div>
+        }
+      </div>
+    } @else {
+      <!-- HU-08: Subir fotografía (sin cámara) -->
+      <div
+        class="zona-foto"
+        [class.arrastrando]="arrastrando()"
+        (dragover)="sobreZona($event)"
+        (dragleave)="arrastrando.set(false)"
+        (drop)="soltarFoto($event)"
+      >
+        @if (imagenPreview(); as src) {
+          <div class="preview">
+            <img [src]="src" alt="Vista previa de la fotografía" />
+            @if (capturando()) {
+              <div class="video-overlay"><span class="spinner-border"></span> Analizando su bioseguridad...</div>
+            }
+          </div>
+          <div class="preview-info">
+            <span><i class="bi bi-file-earmark-image"></i> {{ archivoSeleccionado()?.name }}</span>
+            <label class="btn-link-foto">
+              Cambiar foto
+              <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden (change)="seleccionarFoto($event)" />
+            </label>
+            <button type="button" class="btn-link-foto quitar" [disabled]="capturando()" (click)="quitarFoto()">Quitar</button>
+          </div>
+        } @else {
+          <label class="seleccionar">
+            <span class="icono-foto"><i class="bi bi-camera"></i></span>
+            <strong>Arrastra aquí tu fotografía o haz clic para seleccionar archivo</strong>
+            <span>Formatos permitidos: JPG, JPEG, PNG • Ideal cuando la cámara del box no está disponible</span>
+            <span class="chip-limite"><i class="bi bi-check-circle"></i> Máximo 15 MB • Resolución recomendada: 1080p</span>
+            <input type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" hidden (change)="seleccionarFoto($event)" />
+          </label>
+        }
+        <button
+          type="button"
+          class="btn-analizar"
+          [disabled]="capturando() || !archivoSeleccionado() || !grupo() || !estudiante()?.is_active"
+          (click)="analizarFoto()"
+        >
+          @if (capturando()) {
+            <span class="spinner-border spinner-border-sm"></span> Analizando...
+          } @else {
+            <i class="bi bi-upc-scan"></i> Analizar Fotografía y Ver Resultados
+          }
+        </button>
+      </div>
+    }
 
-    <!-- Barra: estado en vivo + instrucción -->
-    <div class="barra-vivo">
-      <span class="chip-estado" [class.on]="camaraActiva()">
-        <span class="rec"></span>
-        {{ camaraActiva() ? 'EN VIVO' : 'CÁMARA APAGADA' }}
-        @if (camaraActiva() && infoCamara()) { <small>({{ infoCamara() }})</small> }
-      </span>
-      <p><i class="bi bi-person-bounding-box"></i> Colóquese frente a la cámara respetando la guía de encuadre para la verificación automática por visión artificial antes de ingresar al box clínico.</p>
-    </div>
-
-    <div class="video">
-      @if (camaraActiva()) {
-        <img [src]="urlStream()" alt="Video en vivo de la cámara" (error)="streamConError()" />
+    <p class="nota-disp">
+      <i class="bi bi-info-circle"></i>
+      @if (modoCaptura() === 'camara') {
+        La cámara se controla desde el servidor de detección del box clínico.
       } @else {
-        <div class="video-apagado">
-          <i class="bi bi-camera-video-off"></i>
-          <strong>Cámara apagada</strong>
-          <span>Presione "Activar Cámara" para iniciar el escaneo.</span>
-        </div>
+        Modo alternativo: carga estática de fotografía de bioseguridad.
       }
-      @if (capturando()) {
-        <div class="video-overlay"><span class="spinner-border"></span> Analizando su bioseguridad...</div>
-      }
-    </div>
-
-    <p class="nota-disp"><i class="bi bi-info-circle"></i> La cámara se controla desde el servidor de detección del box clínico. La captura generará un informe fotográfico para validación del docente de cátedra.</p>
+      La captura generará un informe fotográfico para validación del docente de cátedra.
+    </p>
 
     @if (error()) {
       <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ error() }}</div>
@@ -135,7 +205,9 @@
         <span>Detecciones en tiempo real</span>
         <strong>{{ enVivo().length }} elementos</strong>
       </div>
-      @if (!camaraActiva()) {
+      @if (modoCaptura() === 'foto') {
+        <p class="vacio">En modo fotografía, el detalle se muestra al analizar la foto.</p>
+      } @else if (!camaraActiva()) {
         <p class="vacio">Active la cámara para ver la pre-verificación.</p>
       } @else if (mensajeEnVivo()) {
         <p class="vacio">{{ mensajeEnVivo() }}</p>
