@@ -3,7 +3,7 @@
 
 Interfaz web en **Angular 21** del sistema de verificación visual de Elementos de Protección Personal (EPP). Consume el microservicio de Inteligencia Artificial **`reconocimiento_bioseguridad`** (FastAPI + YOLO + OpenCV) para el escaneo de los 9 elementos de bioseguridad.
 
-> **Estado actual:** el escaneo con cámara y la evaluación de fotografías usan la **API real**. El inicio de sesión, los cursos, los estudiantes y el historial usan **datos simulados** (ver [Datos simulados](#-datos-simulados-y-conexión-pendiente)).
+> **Estado actual:** los **cursos**, el escaneo con cámara y la evaluación de fotografías usan la **API real** (PostgreSQL). El inicio de sesión, los estudiantes y el historial usan **datos simulados** (ver [Datos simulados](#-datos-simulados-y-conexión-pendiente)).
 
 ---
 
@@ -13,7 +13,7 @@ Interfaz web en **Angular 21** del sistema de verificación visual de Elementos 
 |---|---|
 | [Node.js](https://nodejs.org) | **20.19+**, 22.12+ o 24+ (exigido por Angular 21) |
 | npm | 10+ (incluido con Node) |
-| API `reconocimiento_bioseguridad` | Necesaria solo para el escaneo (cámara / foto) |
+| API `reconocimiento_bioseguridad` + PostgreSQL | Necesaria para Mis Cursos y el escaneo (cámara / foto) |
 
 No hace falta instalar Angular CLI globalmente: los comandos usan `npm`.
 
@@ -47,7 +47,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - Si la API corre en otro host o puerto, cambiar `apiUrl` en [`src/environments/environment.ts`](src/environments/environment.ts).
 - La API ya tiene CORS habilitado para cualquier origen.
 
-Sin la API encendida, la aplicación funciona igual, pero la pantalla de escaneo mostrará **"Servidor de Detección: Sin conexión"**.
+Sin la API encendida, Mis Cursos mostrará un aviso con botón **Reintentar** y la pantalla de escaneo **"Servidor de Detección: Sin conexión"**.
 
 ---
 
@@ -103,6 +103,7 @@ Cliente HTTP en [`src/app/services/api.ts`](src/app/services/api.ts); tipos equi
 | `GET /camera/stream` | Video en vivo (MJPEG en un `<img>`) |
 | `POST /inspections/capture-and-evaluate` | Detecciones en vivo (cada 3 s) y captura final |
 | `POST /inspections/evaluate-image` | Análisis de fotografía subida (HU-08) |
+| `GET /courses` · `POST /courses` · `PUT /courses/{id}` · `PATCH /courses/{id}` | Mis Cursos: listar, crear, editar, habilitar/deshabilitar (HU-02) |
 | `GET /inspections/catalog` · `GET /camera/snapshot` | Disponibles en `api.ts`, aún sin pantalla |
 
 ---
@@ -114,7 +115,6 @@ Mientras la API no tenga estos endpoints, los datos viven en memoria del navegad
 | Dato | Archivo | Endpoints que faltan en la API |
 |---|---|---|
 | Usuarios / login | `services/auth.ts` | `POST /auth/login` (debe devolver el rol) |
-| Cursos | `services/cursos.ts` | `GET/POST/PUT /courses`, `PATCH /courses/:id/estado` |
 | Estudiantes | `services/estudiantes.ts` | `GET/POST/PUT/DELETE /students`, `POST /students/lote` |
 | Historial de inspecciones | `services/inspecciones.ts` + `inspecciones.mock.ts` | `POST /inspections`, `GET /inspections?student_code=` |
 

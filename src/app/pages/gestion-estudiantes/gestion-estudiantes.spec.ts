@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { CURSOS_PRUEBA } from '../../testing/cursos.fixture';
 import { GestionEstudiantes } from './gestion-estudiantes';
 import { Estudiantes } from '../../services/estudiantes';
 import { CARRERA_POR_DEFECTO } from '../../models/estudiante';
@@ -12,11 +15,13 @@ describe('GestionEstudiantes', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [GestionEstudiantes],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
     fixture = TestBed.createComponent(GestionEstudiantes);
     srv = TestBed.inject(Estudiantes);
     el = fixture.nativeElement;
+    fixture.detectChanges();
+    TestBed.inject(HttpTestingController).expectOne((r) => r.url.endsWith('/courses')).flush(CURSOS_PRUEBA);
     await fixture.whenStable();
   });
 

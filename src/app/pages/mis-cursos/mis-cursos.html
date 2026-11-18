@@ -33,7 +33,7 @@
   <div class="indicador">
     <div>
       <span class="ind-titulo">GESTIÓN VIGENTE</span>
-      <span class="ind-valor">{{ anioActual }}</span>
+      <span class="ind-valor">{{ gestion }}</span>
     </div>
     <span class="ind-icono"><i class="bi bi-calendar3"></i></span>
   </div>
@@ -45,7 +45,7 @@
     <i class="bi bi-search"></i>
     <input
       type="search"
-      placeholder="Buscar por nombre, sigla, grupo o año..."
+      placeholder="Buscar por nombre, sigla, grupo, gestión o docente..."
       [value]="busqueda()"
       (input)="busqueda.set($any($event.target).value)"
     />
@@ -62,63 +62,79 @@
   </select>
 </section>
 
+@if (aviso()) {
+  <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ aviso() }}</div>
+}
+
 <!-- Tarjetas de cursos -->
+@if (errorCarga()) {
+  <div class="estado-carga error" role="alert">
+    <i class="bi bi-wifi-off"></i>
+    <p>No se pudieron cargar los cursos. {{ errorCarga() }}</p>
+    <button type="button" class="btn-secundario" (click)="reintentar()"><i class="bi bi-arrow-clockwise"></i> Reintentar</button>
+  </div>
+} @else if (cargando() && !cursos().length) {
+  <div class="estado-carga"><span class="spinner-border spinner-border-sm"></span> Cargando cursos...</div>
+} @else {
 <section class="grilla">
   @for (curso of cursosFiltrados(); track curso.id) {
-    <article class="tarjeta" [class.inactiva]="!curso.activo">
+    <article class="tarjeta" [class.inactiva]="!curso.is_active">
       <div class="tarjeta-top">
-        <span class="sigla">{{ curso.sigla }}</span>
+        <span class="sigla">{{ curso.code }}</span>
         <div class="acciones-top">
           <button
             type="button"
             class="btn-icono"
             title="Editar curso"
-            [attr.aria-label]="'Editar ' + curso.nombre"
+            [attr.aria-label]="'Editar ' + curso.name"
             (click)="abrirEditar(curso)"
           >
             <i class="bi bi-pencil"></i>
           </button>
-          <label class="switch" [title]="curso.activo ? 'Deshabilitar curso' : 'Habilitar curso'">
+          <label class="switch" [title]="curso.is_active ? 'Deshabilitar curso' : 'Habilitar curso'">
             <input
               type="checkbox"
-              [checked]="curso.activo"
+              [checked]="curso.is_active"
               (change)="cambiarEstado(curso, $event)"
-              [attr.aria-label]="(curso.activo ? 'Deshabilitar ' : 'Habilitar ') + curso.nombre"
+              [attr.aria-label]="(curso.is_active ? 'Deshabilitar ' : 'Habilitar ') + curso.name"
             />
             <span class="slider"></span>
           </label>
         </div>
       </div>
 
-      <h2>{{ curso.nombre }} - Grupo {{ curso.grupo }}</h2>
+      <h2>{{ etiqueta(curso) }}</h2>
       <div class="meta">
-        <span><i class="bi" [class.bi-sun]="curso.turno === 'Mañana'" [class.bi-moon]="curso.turno === 'Tarde'"></i> Turno {{ curso.turno }}</span>
+        <span><i class="bi bi-person-badge"></i> {{ curso.teacher_name || 'Sin docente asignado' }}</span>
         <span class="sep">•</span>
-        <span [class.estado-on]="curso.activo" [class.estado-off]="!curso.activo">
-          ● {{ curso.activo ? 'HABILITADO' : 'DESHABILITADO' }}
+        <span [class.estado-on]="curso.is_active" [class.estado-off]="!curso.is_active">
+          ● {{ curso.is_active ? 'HABILITADO' : 'DESHABILITADO' }}
         </span>
       </div>
+      @if (curso.description) {
+        <p class="descripcion">{{ curso.description }}</p>
+      }
 
       <dl class="detalle">
         <div>
           <dt><i class="bi bi-people"></i> Estudiantes</dt>
-          <dd>{{ estudiantesDe(curso) }}</dd>
+          <dd>{{ curso.student_count }}</dd>
         </div>
         <div>
-          <dt><i class="bi bi-calendar3"></i> Año</dt>
-          <dd>{{ curso.anio }}</dd>
+          <dt><i class="bi bi-calendar3"></i> Gestión</dt>
+          <dd>{{ curso.academic_period || '—' }}</dd>
         </div>
       </dl>
 
       <div class="registro">
         <span>Registrado:</span>
-        <strong>{{ curso.fechaRegistro | date: 'dd/MM/yyyy • HH:mm' }}</strong>
+        <strong>{{ curso.created_at | date: 'dd/MM/yyyy • HH:mm' }}</strong>
       </div>
 
       <div class="tarjeta-pie">
         <a
           class="btn-secundario"
-          [class.deshabilitado]="!curso.activo"
+          [class.deshabilitado]="!curso.is_active"
           [routerLink]="['/docente/estudiantes']"
           [queryParams]="{ curso: curso.id }"
         >
@@ -139,6 +155,7 @@
     </div>
   }
 </section>
+}
 
 <!-- Modal crear / editar -->
 @if (modalAbierto()) {
@@ -160,49 +177,59 @@
       <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
         <div class="fila">
           <div class="campo">
-            <label for="sigla">SIGLA</label>
-            <input id="sigla" formControlName="sigla" placeholder="ODO-401" [class.invalido]="invalido('sigla')" />
-            @if (invalido('sigla')) { <small>Ingrese la sigla.</small> }
+            <label for="code">SIGLA</label>
+            <input id="code" formControlName="code" placeholder="ODO-401" [class.invalido]="invalido('code')" />
+            @if (invalido('code')) { <small>Ingrese la sigla (mínimo 2 caracteres).</small> }
           </div>
           <div class="campo">
-            <label for="grupo">GRUPO / PARALELO</label>
-            <input id="grupo" formControlName="grupo" placeholder="A" [class.invalido]="invalido('grupo')" />
-            @if (invalido('grupo')) { <small>Ingrese el grupo.</small> }
+            <label for="group_name">GRUPO / PARALELO</label>
+            <input id="group_name" formControlName="group_name" placeholder="Grupo A" [class.invalido]="invalido('group_name')" />
+            @if (invalido('group_name')) { <small>Ingrese el grupo.</small> }
           </div>
         </div>
 
         <div class="campo">
-          <label for="nombre">NOMBRE DEL CURSO</label>
-          <input id="nombre" formControlName="nombre" placeholder="Clínica Integral I" [class.invalido]="invalido('nombre')" />
-          @if (invalido('nombre')) { <small>Ingrese el nombre del curso.</small> }
+          <label for="name">NOMBRE DEL CURSO</label>
+          <input id="name" formControlName="name" placeholder="Clínica Integral I" [class.invalido]="invalido('name')" />
+          @if (invalido('name')) { <small>Ingrese el nombre del curso (mínimo 3 caracteres).</small> }
         </div>
 
         <div class="fila">
           <div class="campo">
-            <label for="turno">TURNO</label>
-            <select id="turno" formControlName="turno">
-              <option value="Mañana">Mañana</option>
-              <option value="Tarde">Tarde</option>
-            </select>
+            <label for="academic_period">GESTIÓN ACADÉMICA</label>
+            <input id="academic_period" formControlName="academic_period" placeholder="2026-II" [class.invalido]="invalido('academic_period')" />
+            @if (invalido('academic_period')) { <small>Ingrese la gestión (ej. 2026-II).</small> }
           </div>
           <div class="campo">
-            <label for="anio">AÑO</label>
-            <input id="anio" type="number" formControlName="anio" [class.invalido]="invalido('anio')" />
-            @if (invalido('anio')) { <small>Año no válido.</small> }
+            <label for="teacher_name">DOCENTE A CARGO</label>
+            <input id="teacher_name" formControlName="teacher_name" placeholder="Dr. Carlos Mendoza" />
           </div>
+        </div>
+
+        <div class="campo">
+          <label for="description">DESCRIPCIÓN <span class="opcional">(opcional)</span></label>
+          <textarea id="description" rows="2" formControlName="description" placeholder="Turno, box asignado u otra información"></textarea>
         </div>
 
         @if (cursoEditando(); as c) {
           <p class="nota-registro">
-            <i class="bi bi-clock"></i> Registrado el {{ c.fechaRegistro | date: 'dd/MM/yyyy' }} a las
-            {{ c.fechaRegistro | date: 'HH:mm' }}
+            <i class="bi bi-clock"></i> Registrado el {{ c.created_at | date: 'dd/MM/yyyy' }} a las
+            {{ c.created_at | date: 'HH:mm' }}
           </p>
         }
 
+        @if (errorModal()) {
+          <div class="alerta-error" role="alert"><i class="bi bi-exclamation-triangle"></i> {{ errorModal() }}</div>
+        }
+
         <footer class="modal-pie">
-          <button type="button" class="btn-secundario" (click)="cerrarModal()">Cancelar</button>
-          <button type="submit" class="btn-primario">
-            <i class="bi bi-check2"></i> {{ cursoEditando() ? 'Guardar Cambios' : 'Crear Curso' }}
+          <button type="button" class="btn-secundario" [disabled]="guardando()" (click)="cerrarModal()">Cancelar</button>
+          <button type="submit" class="btn-primario" [disabled]="guardando()">
+            @if (guardando()) {
+              <span class="spinner-border spinner-border-sm"></span> Guardando...
+            } @else {
+              <i class="bi bi-check2"></i> {{ cursoEditando() ? 'Guardar Cambios' : 'Crear Curso' }}
+            }
           </button>
         </footer>
       </form>

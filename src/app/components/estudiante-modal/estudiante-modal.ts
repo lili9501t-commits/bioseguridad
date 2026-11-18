@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import readXlsxFile from 'read-excel-file';
-import { Curso } from '../../models/curso';
+import { Curso, etiquetaCurso } from '../../models/curso';
 import { CARRERA_POR_DEFECTO, Estudiante, EstudianteFormulario } from '../../models/estudiante';
 import { Estudiantes } from '../../services/estudiantes';
 
@@ -97,7 +97,7 @@ export class EstudianteModal implements OnInit {
   }
 
   protected etiquetaCurso(c: Curso): string {
-    return `${c.nombre} - Grupo ${c.grupo} (${c.sigla}, ${c.turno})`;
+    return `${etiquetaCurso(c)} (${c.code}${c.academic_period ? ', ' + c.academic_period : ''})`;
   }
 
   protected invalido(campo: keyof typeof this.form.controls): boolean {

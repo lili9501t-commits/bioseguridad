@@ -87,7 +87,7 @@ export class Api {
 }
 
 /** Convierte errores HTTP de FastAPI ({ detail }) en un Error con mensaje legible. */
-function manejarError(err: HttpErrorResponse): Observable<never> {
+export function manejarError(err: HttpErrorResponse): Observable<never> {
   let mensaje: string;
   if (err.status === 0) {
     mensaje = 'No se pudo conectar con la API. Verifique que el servidor esté encendido.';

@@ -54,7 +54,7 @@
   <select class="select-filtro" aria-label="Filtrar por grupo clínico" [value]="filtroCurso() ?? ''" (change)="filtroCurso.set($any($event.target).value ? +$any($event.target).value : null)">
     <option value="">Todos los grupos clínicos</option>
     @for (c of cursos(); track c.id) {
-      <option [value]="c.id">{{ c.nombre }} - Grupo {{ c.grupo }}</option>
+      <option [value]="c.id">{{ etiqueta(c) }}</option>
     }
   </select>
   <div class="segmentado" role="group" aria-label="Filtrar por estado">
@@ -103,8 +103,8 @@
             <td><span class="chip-carrera">{{ e.career }}</span></td>
             <td>
               @if (cursoDe(e); as c) {
-                <strong class="grupo">{{ c.nombre }} - Grupo {{ c.grupo }}</strong>
-                <small class="grupo-sub"><i class="bi bi-clock"></i> Turno {{ c.turno }} • {{ c.sigla }}</small>
+                <strong class="grupo">{{ etiqueta(c) }}</strong>
+                <small class="grupo-sub"><i class="bi bi-calendar3"></i> {{ c.code }}@if (c.academic_period) { • {{ c.academic_period }} }</small>
               } @else {
                 <small class="text-secondary">Sin grupo asignado</small>
               }

@@ -1,66 +1,73 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { Observable, catchError, finalize, tap } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { Curso, CursoFormulario } from '../models/curso';
+import { manejarError } from './api';
 
 /**
- * Datos simulados (Mock Data). Cuando esté la API, reemplazar cada método
- * por su petición HTTP (GET /cursos, POST /cursos, PUT /cursos/:id, PATCH /cursos/:id/estado).
+ * Cursos desde la API (FastAPI + PostgreSQL):
+ *   GET   /courses          listar
+ *   POST  /courses          crear
+ *   PUT   /courses/{id}     editar
+ *   PATCH /courses/{id}     habilitar / deshabilitar ({ is_active })
+ * Mantiene una copia en memoria (signal) para que todas las pantallas compartan la lista.
  */
-const CURSOS_MOCK: Curso[] = [
-  {
-    id: 1,
-    sigla: 'ODO-401',
-    nombre: 'Clínica Integral I',
-    grupo: 'A',
-    turno: 'Mañana',
-    anio: 2026,
-    activo: true,
-    fechaRegistro: '2026-02-10T08:15:00',
-  },
-  {
-    id: 2,
-    sigla: 'ODO-502',
-    nombre: 'Cirugía Bucal II',
-    grupo: 'B',
-    turno: 'Tarde',
-    anio: 2026,
-    activo: true,
-    fechaRegistro: '2026-02-11T14:40:00',
-  },
-  {
-    id: 3,
-    sigla: 'ODO-405',
-    nombre: 'Endodoncia Clínica',
-    grupo: 'C',
-    turno: 'Mañana',
-    anio: 2025,
-    activo: false,
-    fechaRegistro: '2025-08-04T09:05:00',
-  },
-];
-
 @Injectable({ providedIn: 'root' })
 export class Cursos {
-  private readonly _cursos = signal<Curso[]>(CURSOS_MOCK);
+  private readonly http = inject(HttpClient);
+  private readonly url = `${environment.apiUrl}/courses`;
 
+  private readonly _cursos = signal<Curso[]>([]);
   readonly cursos = this._cursos.asReadonly();
-  readonly activos = computed(() => this._cursos().filter((c) => c.activo));
+  readonly activos = computed(() => this._cursos().filter((c) => c.is_active));
 
-  crear(datos: CursoFormulario): Curso {
-    const nuevo: Curso = {
-      ...datos,
-      id: Math.max(0, ...this._cursos().map((c) => c.id)) + 1,
-      activo: true,
-      fechaRegistro: new Date().toISOString(),
-    };
-    this._cursos.update((lista) => [nuevo, ...lista]);
-    return nuevo;
+  readonly cargando = signal(false);
+  readonly error = signal<string | null>(null);
+  private cargado = false;
+
+  /** Carga la lista desde la API. Con `forzar = false` solo la pide la primera vez. */
+  cargar(forzar = false): void {
+    if (this.cargado && !forzar) return;
+    this.cargando.set(true);
+    this.error.set(null);
+    this.http
+      .get<Curso[]>(this.url, { params: { limit: 100 } })
+      .pipe(
+        catchError(manejarError),
+        finalize(() => this.cargando.set(false)),
+      )
+      .subscribe({
+        next: (lista) => {
+          this._cursos.set(lista);
+          this.cargado = true;
+        },
+        error: (e: Error) => this.error.set(e.message),
+      });
   }
 
-  editar(id: number, datos: CursoFormulario): void {
-    this._cursos.update((lista) => lista.map((c) => (c.id === id ? { ...c, ...datos } : c)));
+  crear(datos: CursoFormulario): Observable<Curso> {
+    return this.http.post<Curso>(this.url, datos).pipe(
+      catchError(manejarError),
+      tap((nuevo) => this._cursos.update((l) => [nuevo, ...l])),
+    );
   }
 
-  cambiarEstado(id: number, activo: boolean): void {
-    this._cursos.update((lista) => lista.map((c) => (c.id === id ? { ...c, activo } : c)));
+  editar(id: number, datos: CursoFormulario): Observable<Curso> {
+    return this.http.put<Curso>(`${this.url}/${id}`, datos).pipe(
+      catchError(manejarError),
+      tap((act) => this.reemplazar(act)),
+    );
+  }
+
+  cambiarEstado(id: number, is_active: boolean): Observable<Curso> {
+    return this.http.patch<Curso>(`${this.url}/${id}`, { is_active }).pipe(
+      catchError(manejarError),
+      tap((act) => this.reemplazar(act)),
+    );
+  }
+
+  private reemplazar(curso: Curso): void {
+    this._cursos.update((l) => l.map((c) => (c.id === curso.id ? curso : c)));
   }
 }

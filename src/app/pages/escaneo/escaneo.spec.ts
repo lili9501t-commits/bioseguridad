@@ -6,6 +6,7 @@ import { Escaneo } from './escaneo';
 import { Auth } from '../../services/auth';
 import { Api } from '../../services/api';
 import { Inspecciones } from '../../services/inspecciones';
+import { CURSOS_PRUEBA } from '../../testing/cursos.fixture';
 
 describe('Escaneo', () => {
   let fixture: ComponentFixture<Escaneo>;
@@ -27,6 +28,7 @@ describe('Escaneo', () => {
     fixture.detectChanges();
     http.expectOne(`${api.baseUrl}/health`).flush({ estado: 'ok', modo_detector: 'YOLO' });
     http.expectOne(`${api.baseUrl}/camera/status`).flush({ is_running: false });
+    http.expectOne((r) => r.url === `${api.baseUrl}/courses`).flush(CURSOS_PRUEBA);
     await fixture.whenStable();
   });
 

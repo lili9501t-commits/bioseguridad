@@ -1,10 +1,10 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Cursos } from '../../services/cursos';
-import { Estudiantes } from '../../services/estudiantes';
-import { Curso, Turno } from '../../models/curso';
+import { Auth } from '../../services/auth';
+import { Curso, CursoFormulario, etiquetaCurso, gestionActual } from '../../models/curso';
 
 type FiltroEstado = 'todos' | 'activos' | 'inactivos';
 
@@ -14,22 +14,23 @@ type FiltroEstado = 'todos' | 'activos' | 'inactivos';
   templateUrl: './mis-cursos.html',
   styleUrl: './mis-cursos.css',
 })
-export class MisCursos {
+export class MisCursos implements OnInit {
   private readonly cursosSrv = inject(Cursos);
-  private readonly estudiantesSrv = inject(Estudiantes);
+  private readonly usuario = inject(Auth).usuario;
   private readonly fb = inject(FormBuilder);
 
+  protected readonly etiqueta = etiquetaCurso;
   protected readonly anioActual = new Date().getFullYear();
-  protected readonly cursos = this.cursosSrv.cursos;
-  protected readonly totalActivos = computed(() => this.cursosSrv.activos().length);
-  /** Estudiantes asignados a cursos habilitados (desde el padrón). */
-  protected readonly totalEstudiantes = computed(() =>
-    this.cursosSrv.activos().reduce((suma, c) => suma + this.estudiantesSrv.contarPorCurso(c.id), 0),
-  );
+  protected readonly gestion = gestionActual();
 
-  protected estudiantesDe(curso: Curso): number {
-    return this.estudiantesSrv.contarPorCurso(curso.id);
-  }
+  protected readonly cursos = this.cursosSrv.cursos;
+  protected readonly cargando = this.cursosSrv.cargando;
+  protected readonly errorCarga = this.cursosSrv.error;
+  protected readonly totalActivos = computed(() => this.cursosSrv.activos().length);
+  /** Estudiantes en cursos habilitados (student_count lo calcula la API). */
+  protected readonly totalEstudiantes = computed(() =>
+    this.cursosSrv.activos().reduce((suma, c) => suma + c.student_count, 0),
+  );
 
   // Filtros
   protected readonly busqueda = signal('');
@@ -38,11 +39,11 @@ export class MisCursos {
     const q = this.busqueda().trim().toLowerCase();
     const estado = this.filtroEstado();
     return this.cursos().filter((c) => {
-      if (estado === 'activos' && !c.activo) return false;
-      if (estado === 'inactivos' && c.activo) return false;
+      if (estado === 'activos' && !c.is_active) return false;
+      if (estado === 'inactivos' && c.is_active) return false;
       if (!q) return true;
-      return [c.nombre, c.sigla, c.grupo, c.turno, String(c.anio)].some((v) =>
-        v.toLowerCase().includes(q),
+      return [c.name, c.code, c.group_name, c.academic_period, c.teacher_name].some((v) =>
+        (v ?? '').toLowerCase().includes(q),
       );
     });
   });
@@ -50,40 +51,58 @@ export class MisCursos {
   // Modal crear / editar
   protected readonly modalAbierto = signal(false);
   protected readonly cursoEditando = signal<Curso | null>(null);
+  protected readonly guardando = signal(false);
+  protected readonly errorModal = signal<string | null>(null);
+  /** Aviso cuando falla el switch de habilitar / deshabilitar. */
+  protected readonly aviso = signal<string | null>(null);
 
   protected readonly form = this.fb.nonNullable.group({
-    sigla: ['', [Validators.required, Validators.maxLength(12)]],
-    nombre: ['', [Validators.required, Validators.maxLength(80)]],
-    grupo: ['', [Validators.required, Validators.maxLength(5)]],
-    turno: ['Mañana' as Turno, Validators.required],
-    anio: [this.anioActual, [Validators.required, Validators.min(2000), Validators.max(2100)]],
+    code: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    name: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(150)]],
+    group_name: ['', [Validators.required, Validators.maxLength(50)]],
+    academic_period: [this.gestion, [Validators.required, Validators.maxLength(50)]],
+    teacher_name: ['', Validators.maxLength(150)],
+    description: [''],
   });
+
+  ngOnInit(): void {
+    this.cursosSrv.cargar(true);
+  }
+
+  protected reintentar(): void {
+    this.cursosSrv.cargar(true);
+  }
 
   protected abrirCrear(): void {
     this.cursoEditando.set(null);
+    this.errorModal.set(null);
     this.form.reset({
-      sigla: '',
-      nombre: '',
-      grupo: '',
-      turno: 'Mañana',
-      anio: this.anioActual,
+      code: '',
+      name: '',
+      group_name: '',
+      academic_period: this.gestion,
+      teacher_name: this.usuario()?.nombre ?? '',
+      description: '',
     });
     this.modalAbierto.set(true);
   }
 
   protected abrirEditar(curso: Curso): void {
     this.cursoEditando.set(curso);
+    this.errorModal.set(null);
     this.form.reset({
-      sigla: curso.sigla,
-      nombre: curso.nombre,
-      grupo: curso.grupo,
-      turno: curso.turno,
-      anio: curso.anio,
+      code: curso.code,
+      name: curso.name,
+      group_name: curso.group_name ?? '',
+      academic_period: curso.academic_period ?? '',
+      teacher_name: curso.teacher_name ?? '',
+      description: curso.description ?? '',
     });
     this.modalAbierto.set(true);
   }
 
   protected cerrarModal(): void {
+    if (this.guardando()) return;
     this.modalAbierto.set(false);
   }
 
@@ -92,22 +111,49 @@ export class MisCursos {
       this.form.markAllAsTouched();
       return;
     }
-    const datos = this.form.getRawValue();
-    datos.sigla = datos.sigla.trim().toUpperCase();
-    datos.grupo = datos.grupo.trim().toUpperCase();
-    datos.nombre = datos.nombre.trim();
-
+    const v = this.form.getRawValue();
     const editando = this.cursoEditando();
-    if (editando) {
-      this.cursosSrv.editar(editando.id, datos);
-    } else {
-      this.cursosSrv.crear(datos);
-    }
-    this.cerrarModal();
+    const datos: CursoFormulario = {
+      code: v.code.trim().toUpperCase(),
+      name: v.name.trim(),
+      group_name: v.group_name.trim() || null,
+      academic_period: v.academic_period.trim() || null,
+      teacher_name: v.teacher_name.trim() || null,
+      description: v.description.trim() || null,
+      is_active: editando ? editando.is_active : true,
+    };
+
+    this.guardando.set(true);
+    this.errorModal.set(null);
+    const peticion = editando
+      ? this.cursosSrv.editar(editando.id, datos)
+      : this.cursosSrv.crear(datos);
+    peticion.subscribe({
+      next: () => {
+        this.guardando.set(false);
+        this.modalAbierto.set(false);
+      },
+      error: (e: Error) => {
+        this.guardando.set(false);
+        this.errorModal.set(e.message);
+      },
+    });
   }
 
   protected cambiarEstado(curso: Curso, evento: Event): void {
-    this.cursosSrv.cambiarEstado(curso.id, (evento.target as HTMLInputElement).checked);
+    const input = evento.target as HTMLInputElement;
+    const nuevo = input.checked;
+    input.disabled = true;
+    this.cursosSrv.cambiarEstado(curso.id, nuevo).subscribe({
+      next: () => (input.disabled = false),
+      error: (e: Error) => {
+        // Revertir el switch si la API rechazó el cambio
+        input.checked = !nuevo;
+        input.disabled = false;
+        this.aviso.set(`No se pudo ${nuevo ? 'habilitar' : 'deshabilitar'} el curso: ${e.message}`);
+        setTimeout(() => this.aviso.set(null), 5000);
+      },
+    });
   }
 
   protected invalido(campo: keyof typeof this.form.controls): boolean {

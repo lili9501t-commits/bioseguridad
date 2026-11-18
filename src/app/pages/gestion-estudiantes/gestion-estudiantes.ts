@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Cursos } from '../../services/cursos';
 import { Estudiantes } from '../../services/estudiantes';
 import { Estudiante } from '../../models/estudiante';
-import { Curso } from '../../models/curso';
+import { Curso, etiquetaCurso } from '../../models/curso';
 import { EstudianteModal } from '../../components/estudiante-modal/estudiante-modal';
 
 type FiltroEstado = 'todos' | 'activos' | 'inactivos';
@@ -19,6 +19,7 @@ export class GestionEstudiantes {
   private readonly cursosSrv = inject(Cursos);
 
   protected readonly anioActual = new Date().getFullYear();
+  protected readonly etiqueta = etiquetaCurso;
   protected readonly estudiantes = this.estudiantesSrv.lista;
   protected readonly activos = this.estudiantesSrv.activos;
   protected readonly inactivos = this.estudiantesSrv.inactivos;
@@ -71,6 +72,7 @@ export class GestionEstudiantes {
 
   constructor() {
     // Viene desde "Gestionar Alumnos" en Mis Cursos: /docente/estudiantes?curso=<id>
+    this.cursosSrv.cargar();
     const curso = inject(ActivatedRoute).snapshot.queryParamMap.get('curso');
     if (curso) this.filtroCurso.set(Number(curso));
 

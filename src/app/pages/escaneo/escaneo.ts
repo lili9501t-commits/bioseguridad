@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { Router } from '@angular/router';
 import { EMPTY, Subscription, catchError, exhaustMap, interval, timer } from 'rxjs';
@@ -7,6 +7,7 @@ import { Auth } from '../../services/auth';
 import { Cursos } from '../../services/cursos';
 import { Estudiantes } from '../../services/estudiantes';
 import { Inspecciones } from '../../services/inspecciones';
+import { etiquetaCurso } from '../../models/curso';
 import {
   CaptureMode,
   ElementEvaluationResult,
@@ -47,6 +48,7 @@ export class Escaneo implements OnInit {
     const est = this.estudiante();
     return this.cursosSrv.activos().filter((c) => c.id === est?.clinical_group);
   });
+  protected readonly etiqueta = etiquetaCurso;
   protected readonly grupoId = signal<number | null>(null);
   protected readonly grupo = computed(() => this.misGrupos().find((c) => c.id === this.grupoId()));
 
@@ -81,6 +83,11 @@ export class Escaneo implements OnInit {
   private sondeo?: Subscription;
 
   constructor() {
+    // Preseleccionar el grupo cuando lleguen los cursos de la API (si solo tiene uno)
+    effect(() => {
+      const grupos = this.misGrupos();
+      if (this.grupoId() === null && grupos.length === 1) this.grupoId.set(grupos[0].id);
+    });
     const reloj = interval(1000).subscribe(() => this.ahora.set(new Date()));
     this.destroyRef.onDestroy(() => {
       reloj.unsubscribe();
@@ -89,9 +96,7 @@ export class Escaneo implements OnInit {
   }
 
   ngOnInit(): void {
-    // Preseleccionar el grupo si solo tiene uno
-    const grupos = this.misGrupos();
-    if (grupos.length === 1) this.grupoId.set(grupos[0].id);
+    this.cursosSrv.cargar();
 
     this.api.health().subscribe({
       next: (h) => {
@@ -316,7 +321,7 @@ export class Escaneo implements OnInit {
       student_code: est.student_code,
       estudiante_nombre: `${est.first_name} ${est.last_name}`,
       clinical_group: grupo.id,
-      grupo_nombre: `${grupo.nombre} - Grupo ${grupo.grupo}`,
+      grupo_nombre: etiquetaCurso(grupo),
       fecha_ingreso: this.fechaIngreso.toISOString(),
       resultado,
     });
